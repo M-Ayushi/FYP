@@ -49,4 +49,10 @@ def shortestDist {n : ℕ} (G : Graph n) (i j : Fin n) : ℕ∞ :=
 def isShortestPath {n : ℕ} (G : Graph n) (d : Fin n → Fin n → ℕ∞) : Prop :=
   ∀ i j, d i j = shortestDist G i j
 
+def concatPath {n : ℕ} (p q : List (Fin n)) : List (Fin n) :=
+  match p, q with
+  | [], _ => q
+  | _, [] => p
+  | p, _ :: qs => p ++ qs
+
 end FYP
