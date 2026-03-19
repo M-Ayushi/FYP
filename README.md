@@ -1,4 +1,4 @@
-# FYP
+<!-- # FYP
 
 ## GitHub configuration
 
@@ -10,4 +10,6 @@ To set up your new GitHub repository, follow these steps:
 * Click the **Pages** section of the settings sidebar.
 * In the **Source** dropdown menu, select "GitHub Actions".
 
-After following the steps above, you can remove this section from the README file.
+After following the steps above, you can remove this section from the README file. -->
+
+Formal Verification of Shortest Path Algorithms in Lean

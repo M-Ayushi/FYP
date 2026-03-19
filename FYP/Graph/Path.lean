@@ -6,6 +6,12 @@ namespace FYP
 -- A path is a sequence of vertices
 def Path (n : ℕ) := List (Fin n)
 
+def validPath {n : ℕ} (G : Graph n) : Path n → Prop
+  | [] => False
+  | [_] => True
+  | (u :: v :: rest) =>
+      G.w u v ≠ ⊤ ∧ validPath G (v :: rest)
+
 -- Compute weight of a path by summing edge weights
 def pathDistance {n : ℕ} (G : Graph n) (p : Path n) : ℕ∞ :=
   match p with
