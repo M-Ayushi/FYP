@@ -28,6 +28,12 @@ def pathWeight {n : ℕ} (G : Graph n) : Path n → ℕ∞
   | [_] => 0  -- single vertex has weight 0
   | (u :: v :: rest) =>
       G.w u v + pathWeight G (v :: rest)
+@[simp] lemma pathWeight_nil :
+  pathWeight G [] = 0 := rfl
+@[simp] lemma pathWeight_single (u : Fin n) :
+  pathWeight G [u] = 0 := rfl
+@[simp] lemma pathWeight_cons (u v : Fin n) (rest : Path n) :
+  pathWeight G (u :: v :: rest) = G.w u v + pathWeight G (v :: rest) := rfl
 -- termination_by p.length
 
 def pathsBetween {n : ℕ} (G : Graph n) (i j : Fin n) :=
@@ -49,10 +55,48 @@ def shortestDist {n : ℕ} (G : Graph n) (i j : Fin n) : ℕ∞ :=
 def isShortestPath {n : ℕ} (G : Graph n) (d : Fin n → Fin n → ℕ∞) : Prop :=
   ∀ i j, d i j = shortestDist G i j
 
-def concatPath {n : ℕ} (p q : List (Fin n)) : List (Fin n) :=
-  match p, q with
-  | [], _ => q
-  | _, [] => p
-  | p, _ :: qs => p ++ qs
+def concatPath {n : ℕ} : Path n → Path n → Path n
+  | [], q => q
+  | [u], q => u :: q
+  | (u :: v :: ps), q => u :: concatPath (v :: ps) q
+
+@[simp] lemma graphNoSelfLoop {n : ℕ} (G : Graph n) :
+  ∀ u : Fin n, G.w u u = 0 := sorry
+
+-- Glue two paths by identifying the end of the first path with the start of the
+-- second path (when they are equal), so the junction vertex is not duplicated.
+-- def gluePath {n : ℕ} : Path n → Path n → Path n
+--   | [], q => q
+--   | [u], [] => [u]
+--   | [u], v :: qs =>
+--       if u = v then u :: qs else u :: v :: qs
+--   | (u :: v :: ps), q => u :: gluePath (v :: ps) q
+
+-- lemma gluePath_cons {n : ℕ} (u : Fin n) (ps q : Path n) :
+--   ∃ t : Path n, gluePath (u :: ps) q = u :: t := by
+--   cases ps with
+--   | nil =>
+--     cases q with
+--     | nil =>
+--       exact ⟨[], rfl⟩
+--     | cons v qs =>
+--       by_cases h : u = v
+--       · exact ⟨qs, by simp [gluePath, h]⟩
+--       · exact ⟨v :: qs, by simp [gluePath, h]⟩
+--   | cons v vs =>
+--     exact ⟨gluePath (v :: vs) q, rfl⟩
+
+def usesOnlyUpTo {n : ℕ} (k : Fin n) (p : (List (Fin n))) : Prop :=
+  ∀ v ∈ p, v ≤ k
+
+-- Paths that only use vertices up to k
+def pathUpTo {n : ℕ} (G : Graph n) (k : Fin n) (i j : Fin n) :=
+  {
+    p : Path n |
+    validPath G p ∧
+    pathStart p = some i ∧
+    pathEnd p = some j ∧
+    usesOnlyUpTo k p
+  }
 
 end FYP
