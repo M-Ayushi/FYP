@@ -60,32 +60,6 @@ def concatPath {n : ℕ} : Path n → Path n → Path n
   | [u], q => u :: q
   | (u :: v :: ps), q => u :: concatPath (v :: ps) q
 
-@[simp] lemma graphNoSelfLoop {n : ℕ} (G : Graph n) :
-  ∀ u : Fin n, G.w u u = 0 := sorry
-
--- Glue two paths by identifying the end of the first path with the start of the
--- second path (when they are equal), so the junction vertex is not duplicated.
--- def gluePath {n : ℕ} : Path n → Path n → Path n
---   | [], q => q
---   | [u], [] => [u]
---   | [u], v :: qs =>
---       if u = v then u :: qs else u :: v :: qs
---   | (u :: v :: ps), q => u :: gluePath (v :: ps) q
-
--- lemma gluePath_cons {n : ℕ} (u : Fin n) (ps q : Path n) :
---   ∃ t : Path n, gluePath (u :: ps) q = u :: t := by
---   cases ps with
---   | nil =>
---     cases q with
---     | nil =>
---       exact ⟨[], rfl⟩
---     | cons v qs =>
---       by_cases h : u = v
---       · exact ⟨qs, by simp [gluePath, h]⟩
---       · exact ⟨v :: qs, by simp [gluePath, h]⟩
---   | cons v vs =>
---     exact ⟨gluePath (v :: vs) q, rfl⟩
-
 def usesOnlyUpTo {n : ℕ} (k : Fin n) (p : (List (Fin n))) : Prop :=
   ∀ v ∈ p, v ≤ k
 
