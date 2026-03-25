@@ -22,5 +22,8 @@ noncomputable def floydWarshall {n : ℕ} (G : Graph n) : Fin n → Fin n → �
   let d0 := initDist G
   (List.finRange n).foldl (fun d k => fwStep d k) d0
 
+theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :
+  floydWarshall G i j = dist G i j := by
+  sorry
 
 end FYP

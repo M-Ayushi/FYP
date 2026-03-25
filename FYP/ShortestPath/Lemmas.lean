@@ -42,10 +42,18 @@ lemma pathWeight_concat {n : ℕ} (G : Graph n) :
   | cons u ps ih =>
     sorry
 
+lemma fwStep_correct :
+  fwStep d k i j = min (d i j) (d i k + d k j) := by
+    simp [fwStep]
+
+-- lemma distUpTo_step :
+--   distUpTo G k i j =
+--     min (distUpTo G (k - 1) i j) (distUpTo G (k - 1) i k + distUpTo G (k - 1) k j) := by
+--   sorry
+
 -- lemma fwStep_correct_step {n : ℕ} (G : Graph n) (d : Fin n → Fin n → ℕ∞) (k : Fin n)
 --   (h : ∀ i j, d i j = distUpTo G k i j) :
 --   ∀all i j, fwStep d k i j = distUpTo G k i j := by
 --   sorry
-
 
 end FYP

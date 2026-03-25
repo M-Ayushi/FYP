@@ -6,6 +6,9 @@ namespace FYP
 -- A path is a sequence of vertices
 def Path (n : ℕ) := List (Fin n)
 
+instance {n : ℕ} : Membership (Fin n) (Path n) :=
+  inferInstanceAs (Membership (Fin n) (List (Fin n)))
+
 -- A path is valid if every consecutive pair of vertices has an edge in the graph.
 def validPath {n : ℕ} (G : Graph n) : Path n → Prop
   | [] => False
@@ -36,6 +39,11 @@ def pathWeight {n : ℕ} (G : Graph n) : Path n → ℕ∞
   pathWeight G (u :: v :: rest) = G.w u v + pathWeight G (v :: rest) := rfl
 -- termination_by p.length
 
+def isPathFromTo {n : ℕ} (G : Graph n) (p : Path n) (i j : Fin n) : Prop :=
+  validPath G p ∧
+  pathStart p = some i ∧
+  pathEnd p = some j
+
 def pathsBetween {n : ℕ} (G : Graph n) (i j : Fin n) :=
   {
     p : Path n |
@@ -52,15 +60,20 @@ def shortestDist {n : ℕ} (G : Graph n) (i j : Fin n) : ℕ∞ :=
     -- True definition would compute infimum over all paths from i to j
     G.w i j
 
-def isShortestPath {n : ℕ} (G : Graph n) (d : Fin n → Fin n → ℕ∞) : Prop :=
-  ∀ i j, d i j = shortestDist G i j
+def isShortestPath {n : ℕ} (G : Graph n) (i j : Fin n) (p : Path n) : Prop :=
+  isPathFromTo G p i j ∧
+  ∀ q, isPathFromTo G q i j → pathWeight G p ≤ pathWeight G q
+
+-- defines distance as the minimum weight over all paths from i to j
+noncomputable def dist {n : ℕ} (G : Graph n) (i j : Fin n) : ℕ∞ :=
+  sInf {w | ∃ p, isPathFromTo G p i j ∧ pathWeight G p = w}
 
 def concatPath {n : ℕ} : Path n → Path n → Path n
   | [], q => q
   | [u], q => u :: q
   | (u :: v :: ps), q => u :: concatPath (v :: ps) q
 
-def usesOnlyUpTo {n : ℕ} (k : Fin n) (p : (List (Fin n))) : Prop :=
+def usesOnlyUpTo {n : ℕ} (k : Fin n) (p : Path n) : Prop :=
   ∀ v ∈ p, v ≤ k
 
 -- Paths that only use vertices up to k
@@ -72,5 +85,17 @@ def pathUpTo {n : ℕ} (G : Graph n) (k : Fin n) (i j : Fin n) :=
     pathEnd p = some j ∧
     usesOnlyUpTo k p
   }
+
+noncomputable def distUpTo {n : ℕ} (G : Graph n) (k : Fin n) (i j : Fin n) : ℕ∞ :=
+  sInf {w | ∃ p,
+    isPathFromTo G p i j ∧
+    usesOnlyUpTo k p ∧
+    pathWeight G p = w}
+
+noncomputable def distUpToList {n : ℕ} (G : Graph n) (l : List (Fin n)) (i j : Fin n) : ℕ∞ :=
+  sInf {w | ∃ p,
+    isPathFromTo G p i j ∧
+    (∀ v ∈ p, v ∈ l ∨ v = i ∨ v = j) ∧
+    pathWeight G p = w}
 
 end FYP
