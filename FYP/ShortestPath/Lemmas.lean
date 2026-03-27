@@ -13,9 +13,10 @@ lemma fwStep_le_via_k {n : ℕ} (d : Fin n → Fin n → ℕ∞) (k i j : Fin n)
   fwStep d k i j ≤ d i k + d k j := by
   simp [fwStep]
 
--- lemma fwStep_monotone {n : ℕ} (d : Fin n → Fin n → ℕ∞) (k : Fin n) :
---   ∀ i j, fwStep d k i j ≤ d i j := by
---   sorry
+lemma fwStep_monotone {n : ℕ} (d : Fin n → Fin n → ℕ∞) (k : Fin n) :
+  ∀ i j, fwStep d k i j ≤ d i j := by
+  intro i j
+  simp [fwStep]
 
 lemma foldl_fwStep_le {n : ℕ} (l : List (Fin n)) :
   ∀ d i j, (l.foldl fwStep d) i j ≤ d i j := by
@@ -41,6 +42,15 @@ lemma pathWeight_concat {n : ℕ} (G : Graph n) :
     simp [concatPath]
   | cons u ps ih =>
     sorry
+
+lemma pathWeight_nonneg {n : ℕ} (G : Graph n) (p : Path n) :
+  0 ≤ pathWeight G p := by
+  induction p with
+  | nil => simp
+  | cons u ps ih =>
+    cases ps with
+    | nil => simp
+    | cons v rest => simp [pathWeight]
 
 lemma fwStep_correct :
   fwStep d k i j = min (d i j) (d i k + d k j) := by
