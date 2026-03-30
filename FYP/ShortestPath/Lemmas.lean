@@ -31,27 +31,6 @@ lemma foldl_fwStep_le {n : ℕ} (l : List (Fin n)) :
     have h2 := fwStep_le_self d k i j
     exact le_trans h1 h2
 
-lemma pathWeight_concat {n : ℕ} (G : Graph n) :
-  ∀ p q : Path n,
-    pathEnd p = pathStart q →
-      pathWeight G (concatPath p q) =
-        pathWeight G p + pathWeight G q := by
-  intro p q hpq
-  induction p with
-  | nil =>
-    simp [concatPath]
-  | cons u ps ih =>
-    sorry
-
-lemma pathWeight_nonneg {n : ℕ} (G : Graph n) (p : Path n) :
-  0 ≤ pathWeight G p := by
-  induction p with
-  | nil => simp
-  | cons u ps ih =>
-    cases ps with
-    | nil => simp
-    | cons v rest => simp [pathWeight]
-
 lemma fwStep_correct :
   fwStep d k i j = min (d i j) (d i k + d k j) := by
     simp [fwStep]
