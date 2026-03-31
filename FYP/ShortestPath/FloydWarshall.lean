@@ -1,8 +1,6 @@
 import FYP.Graph.Basic
 import FYP.Graph.Path
-import Mathlib.Data.Nat.Basic
-import Mathlib.Data.Finset.Basic
-import Mathlib.Data.Finset.Fold
+import FYP.Graph.PathLemmas
 
 namespace FYP
 
@@ -26,12 +24,8 @@ noncomputable def floydWarshall {n : ℕ} (G : Graph n) : Fin n → Fin n → �
 -- considering only paths that use vertices in the empty list
 -- This is the base case for the induction in fw_invariant
 lemma initDist_eq_sInf {n : ℕ} (G : Graph n) (i j : Fin n) :
-  initDist G i j =
-    sInf {w | ∃ p,
-                isPathFromTo G p i j ∧
-                (∀ v ∈ p, v ∈ [] ∨ v = i ∨ v = j) ∧
-                pathWeight G p = w} := by
-  simp only [List.not_mem_nil, false_or]
+  initDist G i j = distUpToList G [] i j := by
+  simp only [distUpToList, List.not_mem_nil, false_or]
   by_cases h : i = j
   · -- case i == j
     simp only [h, or_self]
@@ -44,21 +38,54 @@ lemma initDist_eq_sInf {n : ℕ} (G : Graph n) (i j : Fin n) :
   · -- case i != j
     sorry
 
+-- helper lemma for swapping fwStep and foldl
 lemma foldl_fwStep_swap {n : ℕ} (ks : List (Fin n))
   (d : Fin n → Fin n → ℕ∞) (k i j : Fin n) :
   (List.foldl fwStep (fwStep d k) ks) i j =
     fwStep (List.foldl fwStep d ks) k i j := by
     sorry
 
+lemma add_vertex_le {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
+  distUpToList G (k :: ks) i j ≤ distUpToList G ks i j := by
+  apply le_sInf
+  intro w hw
+  rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
+  apply sInf_le
+  refine ⟨p, hp_path, ?_, hp_weight⟩
+  intro v hv
+  specialize hp_vertices v hv
+  cases hp_vertices with
+  | inl h1 =>
+    left
+    simp [h1]
+  | inr h2 =>
+    right
+    simp [h2]
+
+lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
+  distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j := by
+  apply le_of_forall_ge
+  intro w hw
+  sorry
+
 -- proof for adding vertex k to the list of intermediate vertices
 lemma sInf_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j =
     min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j) := by
-  simp only [distUpToList]
   apply le_antisymm
-  · -- show distUpToList G (k :: ks) i j ≤ min ...
+  · -- upper bound: show distUpToList G (k :: ks) i j ≤ min ...
     apply le_min
     · -- show distUpToList G (k :: ks) i j ≤ distUpToList G ks i j
+      -- i.e. paths that can use k can only be shorter than paths that can't use k
+      exact add_vertex_le G ks k i j
+    · -- show distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j
+      -- i.e. any path from i to j that can use k can be split into
+      -- a path from i to k and a path from k to j
+      exact add_vertex_split G ks k i j
+  · -- lower bound: show min ... ≤ distUpToList G (k :: ks) i j
+    apply min_le_iff.mpr
+    constructor
+    · -- show distUpToList G ks i j ≤ distUpToList G (k :: ks) i j
       apply le_sInf
       intro w hw
       rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
@@ -67,46 +94,18 @@ lemma sInf_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
       intro v hv
       specialize hp_vertices v hv
       cases hp_vertices with
-      | inl h1 =>
+      | inl hvks =>
         left
-        simp [h1]
-      | inr h2 =>
-        sorry
-    · -- show distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j
-      apply le_trans
-      · change distUpToList G (k :: ks) i j ≤ distUpToList G ks i j
-        apply le_sInf
-        intro w hw
-        rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
-        by_cases hk : k ∈ p
-        · -- split path at k
-          apply sInf_le
-          refine ⟨p, hp_path, ?_, hp_weight⟩
-          intro v hv
-          specialize hp_vertices v hv
-          cases hp_vertices with
-          | inl hvks =>
-            left
-            exact List.mem_cons_of_mem k hvks
-          | inr hvij =>
-            right
-            exact hvij
-        · -- path avoids k
-          apply sInf_le
-          refine ⟨p, hp_path, ?_, hp_weight⟩
-          intro v hv
-          specialize hp_vertices v hv
-          cases hp_vertices with
-          | inl hvks =>
-            left
-            exact List.mem_cons_of_mem k hvks
-          | inr hvij =>
-            right
-            exact hvij
-      · -- show distUpToList G ks i k + distUpToList G ks k j ≤ min ...
-        apply sInf_le
-        sorry
-  sorry
+        cases List.mem_cons.mp hvks with
+        | inl hvk =>
+          simp [hvk]
+          sorry
+        | inr hvks' =>
+          exact hvks'
+      | inr hvij =>
+        right
+        simp [hvij]
+
 
 -- applying fwStep l times is the same as applying fwStep to the list of vertices in l
 lemma fw_invariant {n : ℕ} (G : Graph n) :

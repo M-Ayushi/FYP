@@ -1,5 +1,6 @@
 import FYP.Graph.Basic
 import FYP.Graph.Path
+import FYP.Graph.PathLemmas
 import FYP.ShortestPath.FloydWarshall
 
 namespace FYP
