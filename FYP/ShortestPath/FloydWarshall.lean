@@ -45,6 +45,26 @@ lemma foldl_fwStep_swap {n : ℕ} (ks : List (Fin n))
     fwStep (List.foldl fwStep d ks) k i j := by
     sorry
 
+-- adding a vertex to the list of intermediate vertices can only decrease distances
+lemma distUpToList_mono {n : ℕ} (G : Graph n) (ks1 ks2 : List (Fin n))
+  (h : ∀ v, v ∈ ks1 → v ∈ ks2) :
+  ∀ i j , distUpToList G ks2 i j ≤ distUpToList G ks1 i j := by
+  intro i j
+  apply le_sInf
+  intro w hw
+  rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
+  apply sInf_le
+  refine ⟨p, hp_path, ?_, hp_weight⟩
+  intro v hv
+  specialize hp_vertices v hv
+  cases hp_vertices with
+  | inl hks1 =>
+    left
+    exact h v hks1
+  | inr hij =>
+    right
+    simp [hij]
+
 lemma add_vertex_le {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j ≤ distUpToList G ks i j := by
   apply le_sInf
@@ -62,11 +82,39 @@ lemma add_vertex_le {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) 
     right
     simp [h2]
 
+-- helper lemma for showing that any path from i to j that can use k can be split into
+-- a path from i to k and a path from k to j
 lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j := by
   apply le_of_forall_ge
   intro w hw
   sorry
+
+lemma consider_k_le_list_incl_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
+  min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j) ≤
+    distUpToList G (k :: ks) i j:= by
+  apply min_le_iff.mpr
+  constructor
+  · -- show distUpToList G ks i j ≤ distUpToList G (k :: ks) i j
+    apply le_sInf
+    intro w hw
+    rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
+    apply sInf_le
+    refine ⟨p, hp_path, ?_, hp_weight⟩
+    intro v hv
+    specialize hp_vertices v hv
+    cases hp_vertices with
+    | inl hvks =>
+      left
+      cases List.mem_cons.mp hvks with
+      | inl hvk =>
+        simp [hvk]
+        sorry
+      | inr hvks' =>
+        exact hvks'
+    | inr hvij =>
+      right
+      simp [hvij]
 
 -- proof for adding vertex k to the list of intermediate vertices
 lemma sInf_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
@@ -83,29 +131,9 @@ lemma sInf_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
       -- a path from i to k and a path from k to j
       exact add_vertex_split G ks k i j
   · -- lower bound: show min ... ≤ distUpToList G (k :: ks) i j
-    apply min_le_iff.mpr
-    constructor
-    · -- show distUpToList G ks i j ≤ distUpToList G (k :: ks) i j
-      apply le_sInf
-      intro w hw
-      rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
-      apply sInf_le
-      refine ⟨p, hp_path, ?_, hp_weight⟩
-      intro v hv
-      specialize hp_vertices v hv
-      cases hp_vertices with
-      | inl hvks =>
-        left
-        cases List.mem_cons.mp hvks with
-        | inl hvk =>
-          simp [hvk]
-          sorry
-        | inr hvks' =>
-          exact hvks'
-      | inr hvij =>
-        right
-        simp [hvij]
-
+    -- i.e. any path from i to j that can use k is at least as long as the shorter of
+    -- the path that doesn't use k and the path that goes via k
+    exact consider_k_le_list_incl_k G ks k i j
 
 -- applying fwStep l times is the same as applying fwStep to the list of vertices in l
 lemma fw_invariant {n : ℕ} (G : Graph n) :
