@@ -9,7 +9,8 @@ def Path (n : ℕ) := List (Fin n)
 instance {n : ℕ} : Membership (Fin n) (Path n) :=
   inferInstanceAs (Membership (Fin n) (List (Fin n)))
 
--- A path is valid if every consecutive pair of vertices has an edge in the graph.
+-- A path is valid if every consecutive pair of vertices
+-- has an edge in the graph.
 def validPath {n : ℕ} (G : Graph n) : Path n → Prop
   | [] => False
   | [_] => True

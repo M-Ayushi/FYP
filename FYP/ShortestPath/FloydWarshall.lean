@@ -45,7 +45,8 @@ lemma foldl_fwStep_swap {n : ℕ} (ks : List (Fin n))
     fwStep (List.foldl fwStep d ks) k i j := by
     sorry
 
--- adding a vertex to the list of intermediate vertices can only decrease distances
+-- adding a vertex to the list of intermediate vertices is a monotone operation
+-- i.e. it can only decrease distances
 lemma distUpToList_mono {n : ℕ} (G : Graph n) (ks1 ks2 : List (Fin n))
   (h : ∀ v, v ∈ ks1 → v ∈ ks2) :
   ∀ i j , distUpToList G ks2 i j ≤ distUpToList G ks1 i j := by
@@ -65,6 +66,8 @@ lemma distUpToList_mono {n : ℕ} (G : Graph n) (ks1 ks2 : List (Fin n))
     right
     simp [hij]
 
+-- helper lemma showing that adding vertex k to the list of intermediate
+-- vertices can only decrease distances
 lemma add_vertex_le {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j ≤ distUpToList G ks i j := by
   apply le_sInf
@@ -82,14 +85,16 @@ lemma add_vertex_le {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) 
     right
     simp [h2]
 
--- helper lemma for showing that any path from i to j that can use k can be split into
--- a path from i to k and a path from k to j
+-- helper lemma for showing that any path from i to j that can use k is less than
+-- or equal to the path that goes via k
 lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j := by
   apply le_of_forall_ge
   intro w hw
   sorry
 
+-- helper lemma showing that any path from i to j that can use k is at least as long
+-- as the shorter of the path that doesn't use k and the path that goes via k
 lemma consider_k_le_list_incl_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j) ≤
     distUpToList G (k :: ks) i j:= by
