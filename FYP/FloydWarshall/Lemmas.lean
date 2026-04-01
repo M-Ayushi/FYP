@@ -46,6 +46,76 @@ lemma fwStep_correct :
 --   ∀all i j, fwStep d k i j = distUpTo G k i j := by
 --   sorry
 
+lemma initDist_eq_sInf_i_eq_j {n : ℕ} (G : Graph n) (j : Fin n) :
+ initDist G j j =
+  sInf {w | ∃ p, isPathFromTo G p j j ∧
+            (∀ v ∈ p, v = j) ∧
+            pathWeight G p = w} := by
+  apply le_antisymm
+  · -- show initDist G j j ≤ sInf ...
+    simp [initDist]  -- initDist G j j = 0
+  · -- show sInf ... ≤ initDist G j j
+    apply sInf_le
+    -- pick the path [j]
+    refine ⟨[j], ⟨?_, ?_, ?_⟩⟩
+    · simp only [isPathFromTo, validPath, pathStart, pathEnd, and_self]
+    · intro v hv
+      rw [List.mem_singleton] at hv
+      rw [hv]
+    · simp [initDist]
+
+lemma initDist_eq_sInf_i_neq_j {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j):
+ initDist G i j = sInf {w | ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v = i ∨ v = j)
+  ∧ pathWeight G p = w} := by
+  apply le_antisymm
+  · -- show G.w i j ≤ sInf {w | ...}
+    apply le_sInf
+    intro w hw
+    rcases hw with ⟨p, hp_path, hp_verts, hp_weight⟩
+    induction p with
+    | nil =>
+      simp only [initDist, h, ↓reduceIte]
+      cases hp_path
+      · contradiction
+    | cons u rest =>
+      have hu : u = i := by sorry
+        -- simp [pathStart] at hp_path
+        -- injection hp_path.2.1 with hstart
+        -- exact hstart
+      cases rest with
+      | nil =>
+        sorry
+        -- simp at hp_path; contradiction
+      | cons v rest' =>
+        -- v = j or v = i
+        have hv : v = j ∨ v = i :=
+          sorry
+          -- hp_verts v (by simp; left; rfl)
+        cases hv
+        · -- direct edge i → j
+          sorry
+          -- rw [hp_weight, pathWeight_cons]
+          -- simp [hu, hv]
+          -- exact le_refl (G.w i j)
+        · -- first edge is i → i, then rest must reach j
+          -- inductive hypothesis: sum of rest ≥ G.w i j
+          sorry
+  · -- show sInf {w | ...} ≤ G.w i j
+    apply sInf_le
+    refine ⟨[i, j], ⟨?_, ?_, ?_⟩⟩
+    · simp [isPathFromTo, validPath, pathStart, pathEnd]
+      sorry
+    · intro v hv
+      cases List.mem_cons.mp hv with
+      | inl h1 =>
+        left
+        rw [h1]
+      | inr h2 =>
+        right
+        simp only [List.mem_cons, List.not_mem_nil, or_false] at h2
+        exact h2
+    · sorry
+
 -- Iniitial distance function is the same as the shortest distance
 -- considering only paths that use vertices in the empty list
 -- This is the base case for the induction in fw_invariant
@@ -53,16 +123,12 @@ lemma initDist_eq_sInf {n : ℕ} (G : Graph n) (i j : Fin n) :
   initDist G i j = distUpToList G [] i j := by
   simp only [distUpToList, List.not_mem_nil, false_or]
   by_cases h : i = j
-  · -- case i == j
-    simp only [h, or_self]
-    apply le_antisymm
-    · -- show initDist G i i ≤ sInf ...
-      simp[initDist]
-    · -- show sInf ... ≤ initDist G i i
-      simp [initDist]
-      sorry
-  · -- case i != j
-    sorry
+  · -- case i = j
+    rw [h]
+    simp only [or_self]
+    exact initDist_eq_sInf_i_eq_j G j
+  · -- case i ≠ j
+    exact initDist_eq_sInf_i_neq_j G i j h
 
 -- helper lemma for swapping fwStep and foldl
 lemma foldl_fwStep_swap {n : ℕ} (ks : List (Fin n))
@@ -123,7 +189,7 @@ lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin 
 -- as the shorter of the path that doesn't use k and the path that goes via k
 lemma consider_k_le_list_incl_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j) ≤
-    distUpToList G (k :: ks) i j:= by
+    distUpToList G (k :: ks) i j := by
   apply min_le_iff.mpr
   constructor
   · -- show distUpToList G ks i j ≤ distUpToList G (k :: ks) i j
@@ -135,17 +201,12 @@ lemma consider_k_le_list_incl_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i
     intro v hv
     specialize hp_vertices v hv
     cases hp_vertices with
-    | inl hvks =>
+    | inl h1 =>
       left
-      cases List.mem_cons.mp hvks with
-      | inl hvk =>
-        simp [hvk]
-        sorry
-      | inr hvks' =>
-        exact hvks'
-    | inr hvij =>
+      sorry
+    | inr h2 =>
       right
-      simp [hvij]
+      simp [h2]
 
 -- proof for adding vertex k to the list of intermediate vertices
 lemma sInf_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
