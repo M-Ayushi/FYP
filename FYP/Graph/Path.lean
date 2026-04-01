@@ -1,5 +1,4 @@
 import FYP.Graph.Basic
-import Mathlib.Data.List.Basic
 
 namespace FYP
 
