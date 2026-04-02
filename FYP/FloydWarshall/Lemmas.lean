@@ -78,27 +78,35 @@ lemma initDist_eq_sInf_i_neq_j {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ 
       cases hp_path
       · contradiction
     | cons u rest =>
-      have hu : u = i := by sorry
-        -- simp [pathStart] at hp_path
-        -- injection hp_path.2.1 with hstart
-        -- exact hstart
+      have hu : u = i := by
+        simp only [isPathFromTo, pathStart, Option.some.injEq] at hp_path
+        rcases hp_path with ⟨_, hu, _⟩
+        exact hu
       cases rest with
       | nil =>
-        sorry
-        -- simp at hp_path; contradiction
+        -- path is just [i], but we need a path from i to j, so this is a contradiction
+        rcases hp_path with ⟨_, hp_start, hp_end⟩
+        simp only [pathStart, Option.some.injEq, pathEnd] at hp_start hp_end
+        subst hp_start
+        subst hp_end
+        exact (h rfl).elim
       | cons v rest' =>
-        -- v = j or v = i
-        have hv : v = j ∨ v = i :=
-          sorry
-          -- hp_verts v (by simp; left; rfl)
-        cases hv
-        · -- direct edge i → j
-          sorry
-          -- rw [hp_weight, pathWeight_cons]
-          -- simp [hu, hv]
-          -- exact le_refl (G.w i j)
-        · -- first edge is i → i, then rest must reach j
-          -- inductive hypothesis: sum of rest ≥ G.w i j
+        rename_i tail_ih
+        apply tail_ih
+        · rcases hp_path with ⟨hp_valid, hp_start, hp_end⟩
+          constructor
+          · simp only [validPath, ne_eq] at hp_valid
+            exact hp_valid.2
+          · constructor
+            · simp [pathStart] at hp_start
+              simp [pathStart]
+              sorry
+            · simpa [pathEnd] using hp_end
+        · intro x hx
+          have hx' : x ∈ u :: v :: rest' := by
+            simp [hx]
+          exact hp_verts x hx'
+        · simp [pathWeight] at hp_weight
           sorry
   · -- show sInf {w | ...} ≤ G.w i j
     apply sInf_le
