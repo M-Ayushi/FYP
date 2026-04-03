@@ -24,4 +24,7 @@ lemma pathWeight_nonneg {n : ℕ} (G : Graph n) (p : Path n) :
     | nil => simp
     | cons v rest => simp [pathWeight]
 
+lemma path_valid {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
+  ¬G.w i j = ⊤ := by sorry
+
 end FYP

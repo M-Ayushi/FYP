@@ -64,67 +64,102 @@ lemma initDist_eq_sInf_i_eq_j {n : ℕ} (G : Graph n) (j : Fin n) :
       rw [hv]
     · simp [initDist]
 
-lemma initDist_eq_sInf_i_neq_j {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j):
- initDist G i j = sInf {w | ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v = i ∨ v = j)
-  ∧ pathWeight G p = w} := by
+lemma two_list_membership {n : ℕ} (i j : Fin n) :
+ ∀ v ∈ [i, j], v = i ∨ v = j := by
+  intro v hv
+  cases List.mem_cons.mp hv with
+  | inl h1 =>
+    left
+    rw [h1]
+  | inr h2 =>
+    right
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at h2
+    exact h2
+
+lemma initDist_eq_sInf_i_neq_j {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
+  initDist G i j = sInf {w | ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v = i ∨ v = j)
+                     ∧ pathWeight G p = w} := by
   apply le_antisymm
-  · -- show G.w i j ≤ sInf {w | ...}
+  · -- i ≠ j
+    simp only [initDist, h, ↓reduceIte]
     apply le_sInf
     intro w hw
-    rcases hw with ⟨p, hp_path, hp_verts, hp_weight⟩
+    rcases hw with ⟨p, hp_path, hp_verts⟩
     induction p with
     | nil =>
-      simp only [initDist, h, ↓reduceIte]
-      cases hp_path
-      · contradiction
+      rcases hp_path with ⟨hvalid, hstart, hend⟩
+      contradiction
     | cons u rest =>
       have hu : u = i := by
-        simp only [isPathFromTo, pathStart, Option.some.injEq] at hp_path
-        rcases hp_path with ⟨_, hu, _⟩
-        exact hu
+        rcases hp_path with ⟨_, hstart, _⟩
+        simp only [pathStart] at hstart
+        injection hstart with hstart_eq
+
       cases rest with
       | nil =>
-        -- path is just [i], but we need a path from i to j, so this is a contradiction
         rcases hp_path with ⟨_, hp_start, hp_end⟩
-        simp only [pathStart, Option.some.injEq, pathEnd] at hp_start hp_end
-        subst hp_start
-        subst hp_end
+        have hu_end : u = j := by
+          simp only [pathEnd] at hp_end
+          injection hp_end with hu_end_eq
+        subst hu_end
+        subst hu
         exact (h rfl).elim
       | cons v rest' =>
+        rcases hp_path with ⟨hvalid, hstart, hend⟩
+        have tail_path : isPathFromTo G (v :: rest') i j := by
+          simp only [isPathFromTo, pathStart, pathEnd, validPath] at *
+          constructor
+          · exact hvalid.2
+          · simp only [Option.some.injEq]
+            rename_i hstart_eq
+            constructor
+            · -- v = i
+              have hv : v ∈ u :: v :: rest' := by
+                simp [List.mem_cons]
+              have hverts := hp_verts.1
+              have hv_cases := hverts v hv
+              cases hv_cases with
+              | inl hv_i =>
+                exact hv_i
+              | inr hv_j =>
+                have : i = j := by
+                  sorry
+                  -- simpa [hv_j] using hu.symm
+                exact (h this).elim
+            · exact hend
+        simp only [ge_iff_le]
         rename_i tail_ih
         apply tail_ih
-        · rcases hp_path with ⟨hp_valid, hp_start, hp_end⟩
-          constructor
-          · simp only [validPath, ne_eq] at hp_valid
-            exact hp_valid.2
-          · constructor
-            · simp [pathStart] at hp_start
-              simp [pathStart]
-              sorry
-            · simpa [pathEnd] using hp_end
-        · intro x hx
-          have hx' : x ∈ u :: v :: rest' := by
-            simp [hx]
-          exact hp_verts x hx'
-        · simp [pathWeight] at hp_weight
-          sorry
-  · -- show sInf {w | ...} ≤ G.w i j
-    apply sInf_le
-    refine ⟨[i, j], ⟨?_, ?_, ?_⟩⟩
-    · simp [isPathFromTo, validPath, pathStart, pathEnd]
-      sorry
-    · intro v hv
-      cases List.mem_cons.mp hv with
-      | inl h1 =>
-        left
-        rw [h1]
-      | inr h2 =>
-        right
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at h2
-        exact h2
-    · sorry
+        · exact tail_path
+        · constructor
+          · intro x hx
+            have hx' : x ∈ u :: v :: rest' := by
+              simp [hx]
+            -- exact hp_verts x hx'
+            sorry
+          ·
+            sorry
+  · apply sInf_le
+    refine ⟨[i, j], ⟨?path_valid, ?path_start, ?path_end⟩, ?verts⟩
+    · simp [validPath]
+      simp [path_valid G i j h]
+    · simp [pathStart]
+    · simp [pathEnd]
+    · constructor
+      · intro v hv
+        cases hv
+        · left
+          rfl
+        · right
+          rename_i h2
+          cases h2 with
+          | head h2_eq_i =>
+            rfl
+          | tail h2_eq_j =>
+            contradiction
+      · simp [initDist, h, ↓reduceIte]
 
--- Iniitial distance function is the same as the shortest distance
+-- Initial distance function is the same as the shortest distance
 -- considering only paths that use vertices in the empty list
 -- This is the base case for the induction in fw_invariant
 lemma initDist_eq_sInf {n : ℕ} (G : Graph n) (i j : Fin n) :
@@ -132,18 +167,98 @@ lemma initDist_eq_sInf {n : ℕ} (G : Graph n) (i j : Fin n) :
   simp only [distUpToList, List.not_mem_nil, false_or]
   by_cases h : i = j
   · -- case i = j
-    rw [h]
-    simp only [or_self]
+    simp only [h, or_self]
     exact initDist_eq_sInf_i_eq_j G j
   · -- case i ≠ j
     exact initDist_eq_sInf_i_neq_j G i j h
+
+lemma fwStep_comm {n : ℕ}
+  (d : Fin n → Fin n → ℕ∞) (k x : Fin n) :
+  fwStep (fwStep d k) x = fwStep (fwStep d x) k := by
+  funext i j
+  apply le_antisymm
+
+  · -- ≤ direction
+    simp [fwStep]
+    -- goal:
+    -- min (min (d i j) (d i k + d k j))
+    --     (min (d i x) (d i k + d k x) + min (d x j) (d x k + d k j))
+    -- ≤
+    -- min (min (d i j) (d i x + d x j))
+    --     (min (d i k) (d i x + d x k) + min (d k j) (d k x + d x j))
+
+    -- apply min_le_iff.mpr
+    -- sorry
+    constructor
+    · -- show first min ≤ LHS
+      constructor
+      · -- show d i j ≤ LHS
+        sorry
+      -- · -- show d i x + d x j ≤ LHS
+      --   sorry
+    · -- show second min ≤ LHS
+      sorry
+
+    -- case 1
+    -- · -- show first min ≤ RHS
+      -- apply le_trans (min_le_left _ _)
+      -- apply min_le_iff.mpr
+      -- left
+      -- rfl
+      -- sorry
+    -- case 2
+    -- · -- show second term ≤ RHS
+      -- apply le_trans (min_le_right _ _)
+      -- apply min_le_iff.mpr
+      -- right
+      -- apply add_le_add
+      -- sorry
+      -- · apply min_le_iff.mpr
+      --   right
+      --   apply add_le_add <;> exact le_rfl
+
+      -- · apply min_le_iff.mpr
+      --   right
+      --   apply add_le_add <;> exact le_rfl
+
+  · -- ≥ direction (symmetric)
+    simp [fwStep]
+    sorry
+    -- apply min_le_iff.mpr
+    -- constructor
+
+    -- · apply le_trans (min_le_left _ _)
+    --   apply min_le_iff.mpr
+    --   left
+    --   rfl
+
+    -- · apply le_trans (min_le_right _ _)
+    --   apply min_le_iff.mpr
+    --   right
+    --   apply add_le_add
+
+    --   · apply min_le_iff.mpr
+    --     right
+    --     apply add_le_add <;> exact le_rfl
+
+    --   · apply min_le_iff.mpr
+    --     right
+    --     apply add_le_add <;> exact le_rfl
 
 -- helper lemma for swapping fwStep and foldl
 lemma foldl_fwStep_swap {n : ℕ} (ks : List (Fin n))
   (d : Fin n → Fin n → ℕ∞) (k i j : Fin n) :
   (List.foldl fwStep (fwStep d k) ks) i j =
     fwStep (List.foldl fwStep d ks) k i j := by
-    sorry
+    revert d
+    induction ks with
+    | nil =>
+      simp
+    | cons x xs ih =>
+      intro d
+      simp only [List.foldl] at *
+      simp only [fwStep_comm d k x]
+      exact ih (d := fwStep d x)
 
 -- adding a vertex to the list of intermediate vertices is a monotone operation
 -- i.e. it can only decrease distances
