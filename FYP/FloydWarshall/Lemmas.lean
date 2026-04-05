@@ -300,13 +300,69 @@ lemma add_vertex_le {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) 
     right
     simp [h2]
 
+lemma exists_path_weight_eq_distUpToList {n : ℕ} (G : Graph n) (ks : List (Fin n)) (i j : Fin n) :
+  ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v ∈ ks) ∧ pathWeight G p = distUpToList G ks i j := by
+  -- apply sInf_exists
+  -- intro w hw
+  -- rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
+  -- exact ⟨p, hp_path, hp_vertices, hp_weight⟩
+  sorry
+
+lemma pathWeight_append_tail  {n : ℕ} (G : Graph n) (p1 p2 : Path n) :
+  pathWeight G (p1 ++ p2.tail)
+    = pathWeight G p1 + pathWeight G p2 := by
+  induction p1 with
+  | nil =>
+    simp
+    sorry
+  | cons u ps ih =>
+    simp only [List.cons_append]
+    have hpq : pathEnd (u :: ps) = pathStart (p2.tail) := by
+      simp [pathStart]
+      sorry
+    have ih' : pathWeight G (ps ++ p2.tail) = pathWeight G ps + pathWeight G p2 := by
+      apply ih
+    sorry
+
 -- helper lemma for showing that any path from i to j that can use k is less than
 -- or equal to the path that goes via k
 lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j := by
-  apply le_of_forall_ge
-  intro w hw
-  sorry
+  -- apply infimum lemma
+  unfold distUpToList
+  apply csInf_le
+
+  -- 1. BddBelow
+  · refine ⟨0, ?_⟩
+    intro w hw
+    exact zero_le _
+
+  -- 2. witness
+  ·    -- extract paths
+    rcases exists_path_weight_eq_distUpToList G ks i k with
+      ⟨p1, hp1_path, hp1_verts, hp1_w⟩
+
+    rcases exists_path_weight_eq_distUpToList G ks k j with
+      ⟨p2, hp2_path, hp2_verts, hp2_w⟩
+
+    -- define concatenation
+    let p := p1 ++ p2.tail
+
+    refine ⟨p, ?_, ?_, ?_⟩
+    · have h_link :
+        pathEnd p1 = pathStart p2 := by
+          simp [getPathEnd G p1 i k hp1_path, getPathStart G p2 k j hp2_path]
+      rcases hp1_path with ⟨hvalid1, hstart1, hend1⟩
+      rcases hp2_path with ⟨hvalid2, hstart2, hend2⟩
+      refine ⟨?_, ?_, ?_⟩
+      · -- show validPath G p
+        sorry
+      · -- show pathStart p = some i
+        sorry
+      · -- show pathEnd p = some j
+        sorry
+    · sorry
+    · sorry
 
 -- helper lemma showing that any path from i to j that can use k is at least as long
 -- as the shorter of the path that doesn't use k and the path that goes via k

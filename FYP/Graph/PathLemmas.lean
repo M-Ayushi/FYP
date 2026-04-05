@@ -27,4 +27,16 @@ lemma pathWeight_nonneg {n : ℕ} (G : Graph n) (p : Path n) :
 lemma path_valid {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
   ¬G.w i j = ⊤ := by sorry
 
+lemma getPathStart {n : ℕ} (G : Graph n) (p : Path n)
+  (i : Fin n) (k : Fin n) (h : isPathFromTo G p i k) :
+  pathStart p = some i := by
+  simp only [isPathFromTo] at h
+  exact h.2.1
+
+lemma getPathEnd {n : ℕ} (G : Graph n) (p : Path n)
+  (i : Fin n) (k : Fin n) (h : isPathFromTo G p i k) :
+  pathEnd p = some k := by
+  simp only [isPathFromTo] at h
+  exact h.2.2
+
 end FYP
