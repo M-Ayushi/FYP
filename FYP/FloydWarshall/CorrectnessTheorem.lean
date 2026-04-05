@@ -28,11 +28,11 @@ theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :
   floydWarshall G i j = dist G i j := by
   simp only [floydWarshall]
   rw [fw_invariant G (List.finRange n) i j]
-  simp only [dist, distUpToList]
   -- show that distUpToList G (List.finRange n) i j = dist G i j
-  -- this should follow from the fact that
+  -- this follows from the fact that
   -- distUpToList G (List.finRange n) i j is the infimum over all
   -- paths from i to j, which is exactly dist G i j
+  simp only [dist, distUpToList]
   apply le_antisymm
   · -- show distUpToList G (List.finRange n) i j ≤ dist
     apply le_sInf
