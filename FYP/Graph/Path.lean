@@ -3,7 +3,8 @@ import FYP.Graph.Basic
 namespace FYP
 
 -- A path is a sequence of vertices
-def Path (n : ℕ) := List (Fin n)
+-- def Path (n : ℕ) := List (Fin n)
+abbrev Path (n : ℕ) := List (Fin n)
 
 instance {n : ℕ} : Membership (Fin n) (Path n) :=
   inferInstanceAs (Membership (Fin n) (List (Fin n)))
