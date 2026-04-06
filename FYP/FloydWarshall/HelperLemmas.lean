@@ -14,4 +14,12 @@ lemma two_list_membership {n : ℕ} (i j : Fin n) :
     simp only [List.mem_cons, List.not_mem_nil, or_false] at h2
     exact h2
 
+lemma add_min : ∀ (a b c : ℕ∞), a + min b c = min (a + b) (a + c) := by
+    intros a b c
+    rcases le_or_gt b c with h | h
+    · simp only [min_eq_left h, left_eq_inf]
+      exact add_le_add_right h a
+    · simp only [min_eq_right h.le, right_eq_inf]
+      apply add_le_add_right h.le a
+
 end FYP

@@ -120,78 +120,13 @@ lemma initDist_eq_sInf {n : ℕ} (G : Graph n) (i j : Fin n) :
   · -- case i ≠ j
     exact initDist_eq_sInf_i_neq_j G i j h
 
-lemma fwStep_comm {n : ℕ}
-  (d : Fin n → Fin n → ℕ∞) (k x : Fin n) :
-  fwStep (fwStep d k) x = fwStep (fwStep d x) k := by
+lemma fwStep_comm {n : ℕ} (d : Fin n → Fin n → ℕ∞) (k x : Fin n) :
+    fwStep (fwStep d k) x = fwStep (fwStep d x) k := by
   funext i j
-  apply le_antisymm
-
-  · -- ≤ direction
-    simp [fwStep]
-    -- goal:
-    -- min (min (d i j) (d i k + d k j))
-    --     (min (d i x) (d i k + d k x) + min (d x j) (d x k + d k j))
-    -- ≤
-    -- min (min (d i j) (d i x + d x j))
-    --     (min (d i k) (d i x + d x k) + min (d k j) (d k x + d x j))
-
-    -- apply min_le_iff.mpr
-    -- sorry
-    constructor
-    · -- show first min ≤ LHS
-      constructor
-      · -- show d i j ≤ LHS
-        sorry
-      -- · -- show d i x + d x j ≤ LHS
-      --   sorry
-    · -- show second min ≤ LHS
-      sorry
-
-    -- case 1
-    -- · -- show first min ≤ RHS
-      -- apply le_trans (min_le_left _ _)
-      -- apply min_le_iff.mpr
-      -- left
-      -- rfl
-      -- sorry
-    -- case 2
-    -- · -- show second term ≤ RHS
-      -- apply le_trans (min_le_right _ _)
-      -- apply min_le_iff.mpr
-      -- right
-      -- apply add_le_add
-      -- sorry
-      -- · apply min_le_iff.mpr
-      --   right
-      --   apply add_le_add <;> exact le_rfl
-
-      -- · apply min_le_iff.mpr
-      --   right
-      --   apply add_le_add <;> exact le_rfl
-
-  · -- ≥ direction (symmetric)
-    simp [fwStep]
-    sorry
-    -- apply min_le_iff.mpr
-    -- constructor
-
-    -- · apply le_trans (min_le_left _ _)
-    --   apply min_le_iff.mpr
-    --   left
-    --   rfl
-
-    -- · apply le_trans (min_le_right _ _)
-    --   apply min_le_iff.mpr
-    --   right
-    --   apply add_le_add
-
-    --   · apply min_le_iff.mpr
-    --     right
-    --     apply add_le_add <;> exact le_rfl
-
-    --   · apply min_le_iff.mpr
-    --     right
-    --     apply add_le_add <;> exact le_rfl
+  simp only [fwStep]
+  simp only [add_min, add_comm, min_comm, min_left_comm]
+  simp only [add_comm, min_comm, min_left_comm, add_left_comm]
+  sorry
 
 -- helper lemma for swapping fwStep and foldl
 lemma foldl_fwStep_swap {n : ℕ} (ks : List (Fin n))
