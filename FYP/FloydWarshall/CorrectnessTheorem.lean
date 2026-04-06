@@ -6,24 +6,6 @@ import FYP.FloydWarshall.Lemmas
 
 namespace FYP
 
--- applying fwStep l times is the same as applying fwStep to the list of vertices in l
-lemma fw_invariant_old {n : ℕ} (G : Graph n) :
-  ∀ (l : List (Fin n)) (i j : Fin n),
-    (l.foldl fwStep (initDist G)) i j = distUpToList G l i j := by
-      intro l
-      induction l with
-      -- base case: no intermediate vertices
-      | nil =>
-        apply initDist_eq_sInf
-      -- inductive step: add vertex k to the list of intermediate vertices
-      | cons k ks ih =>
-        intro i j
-        simp only [List.foldl]
-        rw [foldl_fwStep_swap]
-        simp only [fwStep]
-        rw [ih i j, ih i k, ih k j]
-        rw [sInf_split G ks k i j]
-
 lemma fw_invariant {n : ℕ} (G : Graph n) :
   ∀ (l : List (Fin n)) (i j : Fin n),
     (l.foldl fwStep (initDist G)) i j = distUpToList G l i j := by
@@ -46,7 +28,7 @@ lemma fw_invariant {n : ℕ} (G : Graph n) :
     -- RHS: distUpToList G (ks ++ [k]) i j
     rw [← sInf_split G ks k i j]
     simp [distUpToList]
-    simp only [or_comm (a := _ = k) (b := _ ∈ ks)]
+    simp only [or_comm]
 
 theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :
   floydWarshall G i j = dist G i j := by

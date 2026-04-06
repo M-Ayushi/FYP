@@ -120,29 +120,6 @@ lemma initDist_eq_sInf {n : ℕ} (G : Graph n) (i j : Fin n) :
   · -- case i ≠ j
     exact initDist_eq_sInf_i_neq_j G i j h
 
-lemma fwStep_comm {n : ℕ} (d : Fin n → Fin n → ℕ∞) (k x : Fin n) :
-    fwStep (fwStep d k) x = fwStep (fwStep d x) k := by
-  funext i j
-  simp only [fwStep]
-  simp only [add_min, add_comm, min_comm, min_left_comm]
-  simp only [add_comm, min_comm, min_left_comm, add_left_comm]
-  sorry
-
--- helper lemma for swapping fwStep and foldl
-lemma foldl_fwStep_swap {n : ℕ} (ks : List (Fin n))
-  (d : Fin n → Fin n → ℕ∞) (k i j : Fin n) :
-  (List.foldl fwStep (fwStep d k) ks) i j =
-    fwStep (List.foldl fwStep d ks) k i j := by
-    revert d
-    induction ks with
-    | nil =>
-      simp
-    | cons x xs ih =>
-      intro d
-      simp only [List.foldl] at *
-      simp only [fwStep_comm d k x]
-      exact ih (d := fwStep d x)
-
 -- adding a vertex to the list of intermediate vertices is a monotone operation
 -- i.e. it can only decrease distances
 lemma distUpToList_mono {n : ℕ} (G : Graph n) (ks1 ks2 : List (Fin n))
