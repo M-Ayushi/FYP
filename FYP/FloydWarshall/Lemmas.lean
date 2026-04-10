@@ -256,6 +256,34 @@ lemma pathWeight_append {n} (G : Graph n)
   pathWeight G (p ++ q) =
     pathWeight G p + pathWeight G q := by sorry
 
+lemma takeWhile_drop_split {α : Type} [DecidableEq α]
+  (k : α) (p : List α) (h : k ∈ p) :
+  let p1 := List.takeWhile (fun v => v ≠ k) p
+  let p2 := List.drop (p1.length + 1) p
+  p = p1 ++ [k] ++ p2 := by
+  induction p with
+  | nil =>
+      simp at h
+  | cons hd tl ih =>
+      by_cases h_hd : hd = k
+      · -- k is at the head
+        simp [h_hd]
+      · -- k is in tail
+        have h_tl : k ∈ tl := by
+          simp only [List.mem_cons] at h
+          cases h with
+          | inl h_eq =>
+            cases h_hd (Eq.symm h_eq)
+          | inr h_in =>
+            exact h_in
+        specialize ih h_tl
+        simp only [List.mem_cons, h_hd, not_false_eq_true, ne_eq,
+                  decide_not, List.append_assoc, List.cons_append,
+                  List.nil_append, List.takeWhile, decide_true,
+                  List.length_cons, List.drop_succ_cons,
+                  List.cons.injEq, true_and] at *
+        exact ih
+
 -- helper lemma showing that any path from i to j that can use k is at least as long
 -- as the shorter of the path that doesn't use k and the path that goes via k
 lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
@@ -270,50 +298,9 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
       -- split at first occurrence of k
       let p1 := p.takeWhile (fun v => v ≠ k)           -- prefix before first k
       let p2 := p.drop (p1.length + 1)                 -- suffix after first k
-      have hp_split : p = p1 ++ [k] ++ p2 := by
-        induction p with
-        | nil => simp at h -- impossible because k ∈ p
-        | cons hd tl ih =>
-          by_cases h_hd : hd = k
-          -- first element is k
-          · simp [p1, p2, h_hd]
-          -- first element is not k
-          · have h_tl : k ∈ tl := by
-              simp only [List.mem_cons] at h
-              cases h
-              · rename_i h
-                exfalso
-                exact Ne.elim h_hd (id (Eq.symm h))
-              · rename_i h
-                exact h
-            let p1_tl := tl.takeWhile (fun v => v ≠ k)
-            let p2_tl := tl.drop (p1_tl.length + 1)
-            have ih_tl : tl = p1_tl ++ [k] ++ p2_tl := by
-              sorry
-              -- -- isPathFromTo for tl comes from hp_path
-              -- let hp_path_tl : isPathFromTo G tl i j := by
-              --   -- by definition of hp_path on hd :: tl, tl is tail
-              --   -- This isnt right??
-              --   sorry  -- you can usually get this from your path structure
-              -- have hp_verts_tl : ∀ v ∈ tl, v ∈ k :: ks := by
-              --   intros v hv
-              --   specialize hp_verts v (List.mem_cons_of_mem hd hv)
-              --   exact hp_verts
-              -- have hp_weight_tl : pathWeight G tl = distUpToList G (k :: ks) i j := by
-              --   -- depends on your pathWeight definition
-              --   sorry
-              -- -- apply induction hypothesi
-              -- exact ih hp_path_tl hp_verts_tl hp_weight_tl h_tl
-            -- reconstruct p = hd :: tl
-            have h1 : p1 = hd :: p1_tl := by
-              simp [p1, h_hd]
-              sorry
-            have h2 : p2 = p2_tl := by
-              simp [p2, p1, h_hd]
-              sorry
-            rw [h1, ih_tl, h2]
-            sorry
-      -- assume hp_split : p = p1 ++ [k] ++ p2
+      have hp_split : p = p1 ++ [k] ++ p2 :=
+        takeWhile_drop_split k p h
+
       let p1_k := p1
       let p2_j := p2
 
