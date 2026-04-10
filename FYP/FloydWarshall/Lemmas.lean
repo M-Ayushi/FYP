@@ -300,10 +300,8 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
       let p2 := p.drop (p1.length + 1)                 -- suffix after first k
       have hp_split : p = p1 ++ [k] ++ p2 :=
         takeWhile_drop_split k p h
-
       let p1_k := p1
       let p2_j := p2
-
       -- weights of prefix/suffix ≤ distUpToList on ks
       have h1 : distUpToList G ks i k ≤ pathWeight G (p1_k ++ [k]) :=
         distUpToList_le_of_path G ks i k (p1_k ++ [k])
@@ -311,10 +309,8 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
             -- p1_k ++ [k] is a path from i → k
             have hp_path' : isPathFromTo G (p1 ++ [k] ++ p2) i j := by
               simpa [hp_split] using hp_path
-
             have hp_i_k : isPathFromTo G (p1_k ++ [k]) i k :=
               isPathFromTo_prefix_append G p1 p2 i j k hp_path'
-
             exact hp_i_k
           )
           (by
@@ -358,30 +354,25 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
           | inl hk => exact Or.inr (Or.inl hk)
           | inr hks => exact Or.inl hks
         exact distUpToList_le_of_path G ks k j p2_j hp_k_j hp_verts_p2
-        -- sorry
-
       -- pathWeight p = pathWeight p1 + pathWeight p2
       have hp_sum :
         pathWeight G p = pathWeight G (p1_k ++ [k]) + pathWeight G p2_j := by
         -- use hp_split + pathWeight_append lemma
-          simp [hp_split]
-          sorry
-          -- simpa [pathWeight_append] using hp_weight
-          -- simpa [hp_split, pathWeight_append]
-
+          simp only [hp_split, List.append_assoc, List.cons_append, List.nil_append]
+          have hlist : p1 ++ k :: p2 = (p1 ++ [k]) ++ p2 := by
+            simp [List.append_assoc, List.cons_append, List.nil_append]
+          rw [hlist]
+          apply pathWeight_append
       -- transitivity
       have h_total : distUpToList G ks i k + distUpToList G ks k j ≤ pathWeight G p := by
         simp only [hp_sum]
         exact add_le_add h1 h2
+      have h_right :
+        distUpToList G ks i k + distUpToList G ks k j
+          ≤ distUpToList G (k :: ks) i j := by
+        simpa [hp_weight] using h_total
 
-
-      -- min lemma
-      -- apply le_min
-      -- -- left: distUpToList G ks i j ≤ distUpToList G (k :: ks) i j
-      -- exact distUpToList_le_of_path G ks i j p hp_path hp_verts hp_weight
-      -- -- right: distUpToList G ks i k + distUpToList G ks k j ≤ distUpToList G (k :: ks) i j
-      -- exact h_total
-      sorry
+      exact le_trans (min_le_right _ _) h_right
     · -- case 2: p doesn't use k
       -- show distUpToList G ks i j ≤ distUpToList G (k :: ks) i j
       -- i.e. any path from i to j that doesn't use k is still a valid path
@@ -395,19 +386,15 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
           exact False.elim (h hv)
         · -- v ∈ ks
           exact Or.inl h'
-
       have hA :
         distUpToList G ks i j ≤ pathWeight G p :=
         distUpToList_le_of_path G ks i j p hp_path hp_verts_ks
-
       have : distUpToList G ks i j ≤ distUpToList G (k :: ks) i j := by
         rw [<- hp_weight]
         exact hA
-
       -- exact this
       have h1 := (min_le_left (distUpToList G ks i j)
         (distUpToList G ks i k + distUpToList G ks k j)).trans hA
-
       rw [hp_weight] at h1
       exact h1
 
