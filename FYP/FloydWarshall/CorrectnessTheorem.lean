@@ -19,25 +19,25 @@ lemma fw_invariant {n : ℕ} (G : Graph n) :
     -- Now LHS is: fwStep (ks.foldl fwStep (initDist G)) k i j
     -- IH gives:   (ks.foldl fwStep (initDist G)) i j = distUpToList G ks i j
     -- So we can rewrite the inner matrix using ih
-    rw [show (List.foldl fwStep (initDist G) ks) =
-            (fun i j => distUpToList G ks i j) from funext (fun i => funext (fun j => ih i j))]
+    have hfun: (List.foldl fwStep (initDist G) ks) =
+        (fun i j => distUpToList G ks i j) :=
+      funext (fun i => funext (fun j => ih i j))
+    rw [hfun]
     -- Now LHS is: fwStep (distUpToList G ks) k i j
     --           = min (distUpToList G ks i j)
     --                 (distUpToList G ks i k + distUpToList G ks k j)
     simp only [fwStep]
     -- RHS: distUpToList G (ks ++ [k]) i j
-    rw [← sInf_split G ks k i j]
-    simp [distUpToList]
-    simp only [or_comm]
+    rw [sInf_split G ks k i j]
+    simp [distUpToList, or_comm]
 
 theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :
   floydWarshall G i j = dist G i j := by
   simp only [floydWarshall]
   rw [fw_invariant G (List.finRange n) i j]
   -- show that distUpToList G (List.finRange n) i j = dist G i j
-  -- this follows from the fact that
-  -- distUpToList G (List.finRange n) i j is the infimum over all
-  -- paths from i to j, which is exactly dist G i j
+  -- follows from the fact that distUpToList G (List.finRange n) i j
+  -- is the infimum over all paths from i to j, which is exactly dist G i j
   simp only [dist, distUpToList]
   apply le_antisymm
   · -- show distUpToList G (List.finRange n) i j ≤ dist
@@ -47,7 +47,7 @@ theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :
     apply sInf_le
     refine ⟨p, hp_path, ?_, rfl⟩
     -- show that p only uses vertices in List.finRange n
-    -- this should be true since List.finRange n contains all vertices
+    -- true since List.finRange n contains all vertices
     simp [List.mem_finRange, true_or]
   · -- show dist G i j ≤ distUpToList G (List.finRange n) i j
     simp

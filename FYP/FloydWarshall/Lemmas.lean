@@ -85,8 +85,7 @@ lemma initDist_eq_sInf_i_neq_j {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ 
               simp [hx]
             -- exact hp_verts x hx'
             sorry
-          ·
-            sorry
+          · sorry
   · apply sInf_le
     refine ⟨[i, j], ⟨?path_valid, ?path_start, ?path_end⟩, ?verts⟩
     · simp [validPath]
@@ -224,34 +223,216 @@ lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin 
     · sorry
     · sorry
 
+lemma distUpToList_le_of_path {n : ℕ} (G : Graph n)
+  (ks : List (Fin n)) (i j : Fin n) (p : Path n)
+  (hp_path : isPathFromTo G p i j)
+  (hp_verts : ∀ v ∈ p, v ∈ ks ∨ v = i ∨ v = j) :
+  distUpToList G ks i j ≤ pathWeight G p := by
+    unfold distUpToList
+    apply sInf_le
+    use p
+
+lemma isPathFromTo_append {n: ℕ} (G : Graph n) (p q : List (Fin n)) (i j k : Fin n)
+  (hp : isPathFromTo G p i k) (hq : isPathFromTo G q k j) :
+  isPathFromTo G (p ++ q.tail) i j := by
+  sorry
+
+lemma isPathFromTo_prefix_append {n} (G : Graph n)
+  (p1 p2 : List (Fin n)) (i j k : Fin n)
+  (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
+  isPathFromTo G (p1 ++ [k]) i k := by
+  -- prove by unfolding isPathFromTo and using structure of lists
+  sorry
+
+lemma isPathFromTo_suffix_append {n} (G : Graph n)
+  (p1 p2 : List (Fin n)) (i j k : Fin n)
+  (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
+  isPathFromTo G p2 k j := by
+  -- prove by unfolding isPathFromTo and using structure of lists
+  sorry
+
+lemma pathWeight_append {n} (G : Graph n)
+  (p q : List (Fin n)) :
+  pathWeight G (p ++ q) =
+    pathWeight G p + pathWeight G q := by sorry
+
 -- helper lemma showing that any path from i to j that can use k is at least as long
 -- as the shorter of the path that doesn't use k and the path that goes via k
-lemma consider_k_le_list_incl_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
+lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j) ≤
     distUpToList G (k :: ks) i j := by
-  apply min_le_iff.mpr
-  constructor
-  · -- show distUpToList G ks i j ≤ distUpToList G (k :: ks) i j
-    apply le_sInf
-    intro w hw
-    rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
-    apply sInf_le
-    refine ⟨p, hp_path, ?_, hp_weight⟩
-    intro v hv
-    specialize hp_vertices v hv
-    cases hp_vertices with
-    | inl h1 =>
-      left
+    obtain ⟨p, hp_path, hp_verts, hp_weight⟩ := exists_path_weight_eq_distUpToList G (k :: ks) i j
+    by_cases h : k ∈ p
+    · -- case 1: p uses k
+      -- show distUpToList G ks i k + distUpToList G ks k j ≤ distUpToList G (k :: ks) i j
+      -- i.e. any path from i to j that uses k can be split into a
+      -- path from i to k and a path from k to j
+      -- split at first occurrence of k
+      let p1 := p.takeWhile (fun v => v ≠ k)           -- prefix before first k
+      let p2 := p.drop (p1.length + 1)                 -- suffix after first k
+      have hp_split : p = p1 ++ [k] ++ p2 := by
+        induction p with
+        | nil => simp at h -- impossible because k ∈ p
+        | cons hd tl ih =>
+          by_cases h_hd : hd = k
+          -- first element is k
+          · simp [p1, p2, h_hd]
+          -- first element is not k
+          · have h_tl : k ∈ tl := by
+              simp only [List.mem_cons] at h
+              cases h
+              · rename_i h
+                exfalso
+                exact Ne.elim h_hd (id (Eq.symm h))
+              · rename_i h
+                exact h
+            let p1_tl := tl.takeWhile (fun v => v ≠ k)
+            let p2_tl := tl.drop (p1_tl.length + 1)
+            have ih_tl : tl = p1_tl ++ [k] ++ p2_tl := by
+              sorry
+              -- -- isPathFromTo for tl comes from hp_path
+              -- let hp_path_tl : isPathFromTo G tl i j := by
+              --   -- by definition of hp_path on hd :: tl, tl is tail
+              --   -- This isnt right??
+              --   sorry  -- you can usually get this from your path structure
+              -- have hp_verts_tl : ∀ v ∈ tl, v ∈ k :: ks := by
+              --   intros v hv
+              --   specialize hp_verts v (List.mem_cons_of_mem hd hv)
+              --   exact hp_verts
+              -- have hp_weight_tl : pathWeight G tl = distUpToList G (k :: ks) i j := by
+              --   -- depends on your pathWeight definition
+              --   sorry
+              -- -- apply induction hypothesi
+              -- exact ih hp_path_tl hp_verts_tl hp_weight_tl h_tl
+            -- reconstruct p = hd :: tl
+            have h1 : p1 = hd :: p1_tl := by
+              simp [p1, h_hd]
+              sorry
+            have h2 : p2 = p2_tl := by
+              simp [p2, p1, h_hd]
+              sorry
+            rw [h1, ih_tl, h2]
+            sorry
+      -- assume hp_split : p = p1 ++ [k] ++ p2
+      let p1_k := p1
+      let p2_j := p2
+
+      -- weights of prefix/suffix ≤ distUpToList on ks
+      have h1 : distUpToList G ks i k ≤ pathWeight G (p1_k ++ [k]) :=
+        distUpToList_le_of_path G ks i k (p1_k ++ [k])
+          (by
+            -- p1_k ++ [k] is a path from i → k
+            have hp_path' : isPathFromTo G (p1 ++ [k] ++ p2) i j := by
+              simpa [hp_split] using hp_path
+
+            have hp_i_k : isPathFromTo G (p1_k ++ [k]) i k :=
+              isPathFromTo_prefix_append G p1 p2 i j k hp_path'
+
+            exact hp_i_k
+          )
+          (by
+            -- all vertices in ks ∪ {i,k}
+            intros v hv;
+            simp only [List.mem_cons] at hp_verts
+            have hv_p : v ∈ p := by
+              -- v ∈ p1 ++ [k] ⊆ p1 ++ [k] ++ p2 = p
+              have : v ∈ p1 ++ [k] ++ p2 := by
+                apply List.mem_append.mpr
+                exact Or.inl hv
+              simpa [hp_split] using this
+            specialize hp_verts v hv_p
+            cases hp_verts with
+            | inl hk =>
+                -- v = k
+                exact Or.inr (Or.inr hk)
+            | inr hks =>
+                -- v ∈ ks
+                exact Or.inl hks
+            )
+      have h2 : distUpToList G ks k j ≤ pathWeight G p2_j := by
+        have hp_k_j : isPathFromTo G p2_j k j := by
+          -- suffix of a path starting at k
+          -- this is the dual of your prefix lemma
+          have hp_path' : isPathFromTo G (p1 ++ [k] ++ p2) i j := by
+            simpa [hp_split] using hp_path
+          exact isPathFromTo_suffix_append G p1 p2 i j k hp_path'
+        have hp_verts_p2 : ∀ v ∈ p2_j, v ∈ ks ∨ v = k ∨ v = j := by
+          intros v hv
+          have hv_p : v ∈ p := by
+            have : v ∈ p1 ++ [k] ++ p2 := by
+              apply List.mem_append.mpr
+              simp only [p2_j] at hv
+              exact Or.inr hv
+            simpa [hp_split] using this
+          specialize hp_verts v hv_p
+          -- hp_verts : v ∈ k :: ks
+          simp only [List.mem_cons] at hp_verts
+          cases hp_verts with
+          | inl hk => exact Or.inr (Or.inl hk)
+          | inr hks => exact Or.inl hks
+        exact distUpToList_le_of_path G ks k j p2_j hp_k_j hp_verts_p2
+        -- sorry
+
+      -- pathWeight p = pathWeight p1 + pathWeight p2
+      have hp_sum :
+        pathWeight G p = pathWeight G (p1_k ++ [k]) + pathWeight G p2_j := by
+        -- use hp_split + pathWeight_append lemma
+          simp [hp_split]
+          sorry
+          -- simpa [pathWeight_append] using hp_weight
+          -- simpa [hp_split, pathWeight_append]
+
+      -- transitivity
+      have h_total : distUpToList G ks i k + distUpToList G ks k j ≤ pathWeight G p := by
+        simp only [hp_sum]
+        exact add_le_add h1 h2
+
+
+      -- min lemma
+      -- apply le_min
+      -- -- left: distUpToList G ks i j ≤ distUpToList G (k :: ks) i j
+      -- exact distUpToList_le_of_path G ks i j p hp_path hp_verts hp_weight
+      -- -- right: distUpToList G ks i k + distUpToList G ks k j ≤ distUpToList G (k :: ks) i j
+      -- exact h_total
       sorry
-    | inr h2 =>
-      right
-      simp [h2]
+    · -- case 2: p doesn't use k
+      -- show distUpToList G ks i j ≤ distUpToList G (k :: ks) i j
+      -- i.e. any path from i to j that doesn't use k is still a valid path
+      --  when we add k to the list of intermediate vertices
+      have hp_verts_ks : ∀ v ∈ p, v ∈ ks ∨ v = i ∨ v = j := by
+        intro v hv
+        have hmem := hp_verts v hv
+        rcases List.mem_cons.mp hmem with h' | h'
+        · -- v = k
+          subst h'
+          exact False.elim (h hv)
+        · -- v ∈ ks
+          exact Or.inl h'
+
+      have hA :
+        distUpToList G ks i j ≤ pathWeight G p :=
+        distUpToList_le_of_path G ks i j p hp_path hp_verts_ks
+
+      have : distUpToList G ks i j ≤ distUpToList G (k :: ks) i j := by
+        rw [<- hp_weight]
+        exact hA
+
+      -- exact this
+      have h1 := (min_le_left (distUpToList G ks i j)
+        (distUpToList G ks i k + distUpToList G ks k j)).trans hA
+
+      rw [hp_weight] at h1
+      exact h1
 
 -- proof for adding vertex k to the list of intermediate vertices
 lemma sInf_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
-  distUpToList G (k :: ks) i j =
-    min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j) := by
+  min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j)
+    = distUpToList G (k :: ks) i j := by
   apply le_antisymm
+  · -- lower bound: show min ... ≤ distUpToList G (k :: ks) i j
+    -- i.e. any path from i to j that can use k is at least as long as the shorter of
+    -- the path that doesn't use k and the path that goes via k
+    exact min_le_list_with_k G ks k i j
   · -- upper bound: show distUpToList G (k :: ks) i j ≤ min ...
     apply le_min
     · -- show distUpToList G (k :: ks) i j ≤ distUpToList G ks i j
@@ -261,9 +442,5 @@ lemma sInf_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
       -- i.e. any path from i to j that can use k can be split into
       -- a path from i to k and a path from k to j
       exact add_vertex_split G ks k i j
-  · -- lower bound: show min ... ≤ distUpToList G (k :: ks) i j
-    -- i.e. any path from i to j that can use k is at least as long as the shorter of
-    -- the path that doesn't use k and the path that goes via k
-    exact consider_k_le_list_incl_k G ks k i j
 
 end FYP
