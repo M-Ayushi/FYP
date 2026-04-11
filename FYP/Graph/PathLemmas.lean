@@ -39,4 +39,14 @@ lemma getPathEnd {n : ℕ} (G : Graph n) (p : Path n)
   simp only [isPathFromTo] at h
   exact h.2.2
 
+lemma pathEnd_cons {n : ℕ} (u v : Fin n) (rest : List (Fin n)) :
+  pathEnd (u :: v :: rest) = pathEnd (v :: rest) := by
+  cases rest with
+  | nil =>
+      -- pathEnd [x] = some x
+      simp [pathEnd]
+  | cons y ys =>
+      -- pathEnd (x :: y :: ys) = pathEnd (y :: ys)
+      simp [pathEnd]
+
 end FYP
