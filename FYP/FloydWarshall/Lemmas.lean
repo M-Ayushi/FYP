@@ -232,17 +232,62 @@ lemma distUpToList_le_of_path {n : ℕ} (G : Graph n)
     apply sInf_le
     use p
 
-lemma isPathFromTo_append {n: ℕ} (G : Graph n) (p q : List (Fin n)) (i j k : Fin n)
-  (hp : isPathFromTo G p i k) (hq : isPathFromTo G q k j) :
-  isPathFromTo G (p ++ q.tail) i j := by
-  sorry
+lemma validPath_prefix_cons {n : ℕ} (G : Graph n)
+  (p1 p2 : List (Fin n)) (k : Fin n) :
+  validPath G (p1 ++ [k] ++ p2) → validPath G (p1 ++ [k]) := by
+  intro h
+  induction p1 with
+  | nil =>
+      simp [validPath]
+  | cons hd tl ih =>
+      simp only [List.cons_append, List.append_assoc,
+                List.nil_append] at h
+      cases tl with
+      | nil =>
+          -- p1 = [hd]
+          simp only [List.nil_append] at h
+          exact ⟨ h.1, trivial⟩
+      | cons v rest =>
+          -- main recursive case
+          simp only [List.cons_append] at h
+          rcases h with ⟨h_edge, h_tail⟩
+          have h_tail' : validPath G (v :: (rest ++ [k] ++ p2)) := by
+            simpa [List.append_assoc] using h_tail
+          have h_mid : validPath G (v :: rest ++ [k]) :=
+            ih h_tail'
+          exact ⟨h_edge, h_mid⟩
 
-lemma isPathFromTo_prefix_append {n} (G : Graph n)
+lemma pathEnd_append_singleton {n : ℕ}
+  (xs : List (Fin n)) (k : Fin n) :
+  pathEnd (xs ++ [k]) = some k := by
+  induction xs with
+  | nil =>
+      simp [pathEnd]
+  | cons x xs ih =>
+      simp [pathEnd, ih]
+
+lemma isPathFromTo_prefix {n : ℕ} (G : Graph n)
   (p1 p2 : List (Fin n)) (i j k : Fin n)
   (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
   isPathFromTo G (p1 ++ [k]) i k := by
-  -- prove by unfolding isPathFromTo and using structure of lists
-  sorry
+  rcases h with ⟨h_valid, h_start, h_end⟩
+  -- 1. prefix of a valid path is valid
+  have h_valid_prefix : validPath G (p1 ++ [k]) := by
+    exact validPath_prefix_cons G p1 p2 k h_valid
+  -- 2. start is preserved
+  have h_start_prefix : pathStart (p1 ++ [k]) = some i := by
+    cases p1 with
+    | nil =>
+      simp only [List.nil_append] at h_start
+      exact h_start
+    | cons hd tl =>
+      simp only [List.cons_append] at h_start
+      exact h_start
+  -- 3. end becomes k
+  have h_end_prefix : pathEnd (p1 ++ [k]) = some k := by
+    simp only [pathEnd_append_singleton]
+  exact ⟨h_valid_prefix, h_start_prefix, h_end_prefix⟩
+
 
 lemma isPathFromTo_suffix_append {n} (G : Graph n)
   (p1 p2 : List (Fin n)) (i j k : Fin n)
@@ -255,34 +300,6 @@ lemma pathWeight_append {n} (G : Graph n)
   (p q : List (Fin n)) :
   pathWeight G (p ++ q) =
     pathWeight G p + pathWeight G q := by sorry
-
-lemma takeWhile_drop_split {α : Type} [DecidableEq α]
-  (k : α) (p : List α) (h : k ∈ p) :
-  let p1 := List.takeWhile (fun v => v ≠ k) p
-  let p2 := List.drop (p1.length + 1) p
-  p = p1 ++ [k] ++ p2 := by
-  induction p with
-  | nil =>
-      simp at h
-  | cons hd tl ih =>
-      by_cases h_hd : hd = k
-      · -- k is at the head
-        simp [h_hd]
-      · -- k is in tail
-        have h_tl : k ∈ tl := by
-          simp only [List.mem_cons] at h
-          cases h with
-          | inl h_eq =>
-            cases h_hd (Eq.symm h_eq)
-          | inr h_in =>
-            exact h_in
-        specialize ih h_tl
-        simp only [List.mem_cons, h_hd, not_false_eq_true, ne_eq,
-                  decide_not, List.append_assoc, List.cons_append,
-                  List.nil_append, List.takeWhile, decide_true,
-                  List.length_cons, List.drop_succ_cons,
-                  List.cons.injEq, true_and] at *
-        exact ih
 
 -- helper lemma showing that any path from i to j that can use k is at least as long
 -- as the shorter of the path that doesn't use k and the path that goes via k
@@ -310,7 +327,7 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
             have hp_path' : isPathFromTo G (p1 ++ [k] ++ p2) i j := by
               simpa [hp_split] using hp_path
             have hp_i_k : isPathFromTo G (p1_k ++ [k]) i k :=
-              isPathFromTo_prefix_append G p1 p2 i j k hp_path'
+              isPathFromTo_prefix G p1 p2 i j k hp_path'
             exact hp_i_k
           )
           (by
@@ -371,7 +388,6 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
         distUpToList G ks i k + distUpToList G ks k j
           ≤ distUpToList G (k :: ks) i j := by
         simpa [hp_weight] using h_total
-
       exact le_trans (min_le_right _ _) h_right
     · -- case 2: p doesn't use k
       -- show distUpToList G ks i j ≤ distUpToList G (k :: ks) i j
