@@ -232,102 +232,18 @@ lemma distUpToList_le_of_path {n : ℕ} (G : Graph n)
     apply sInf_le
     use p
 
-lemma validPath_prefix_cons {n : ℕ} (G : Graph n)
-  (p1 p2 : List (Fin n)) (k : Fin n) :
-  validPath G (p1 ++ [k] ++ p2) → validPath G (p1 ++ [k]) := by
-  intro h
-  induction p1 with
-  | nil =>
-      simp [validPath]
-  | cons hd tl ih =>
-      simp only [List.cons_append, List.append_assoc,
-                List.nil_append] at h
-      cases tl with
-      | nil =>
-          -- p1 = [hd]
-          simp only [List.nil_append] at h
-          exact ⟨ h.1, trivial⟩
-      | cons v rest =>
-          -- main recursive case
-          simp only [List.cons_append] at h
-          rcases h with ⟨h_edge, h_tail⟩
-          have h_tail' : validPath G (v :: (rest ++ [k] ++ p2)) := by
-            simpa [List.append_assoc] using h_tail
-          have h_mid : validPath G (v :: rest ++ [k]) :=
-            ih h_tail'
-          exact ⟨h_edge, h_mid⟩
-
-lemma pathEnd_append_singleton {n : ℕ}
-  (xs : List (Fin n)) (k : Fin n) :
-  pathEnd (xs ++ [k]) = some k := by
-  induction xs with
-  | nil =>
-      simp [pathEnd]
-  | cons x xs ih =>
-      simp [pathEnd, ih]
-
 lemma isPathFromTo_prefix {n : ℕ} (G : Graph n)
   (p1 p2 : List (Fin n)) (i j k : Fin n)
   (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
   isPathFromTo G (p1 ++ [k]) i k := by
   rcases h with ⟨h_valid, h_start, h_end⟩
-  -- 1. prefix of a valid path is valid
   have h_valid_prefix : validPath G (p1 ++ [k]) := by
-    exact validPath_prefix_cons G p1 p2 k h_valid
-  -- 2. start is preserved
+    exact validPath_prefix G p1 p2 k h_valid
   have h_start_prefix : pathStart (p1 ++ [k]) = some i := by
-    cases p1 with
-    | nil =>
-      simp only [List.nil_append] at h_start
-      exact h_start
-    | cons hd tl =>
-      simp only [List.cons_append] at h_start
-      exact h_start
-  -- 3. end becomes k
+    exact pathStart_prefix p1 p2 i k h_start
   have h_end_prefix : pathEnd (p1 ++ [k]) = some k := by
     simp only [pathEnd_append_singleton]
   exact ⟨h_valid_prefix, h_start_prefix, h_end_prefix⟩
-
-lemma validPath_suffix {n : ℕ} (G : Graph n)
-  (p1 p2 : List (Fin n)) (k : Fin n) :
-  validPath G (p1 ++ [k] ++ p2) → validPath G ([k] ++ p2) := by
-  intro h
-  induction p1 with
-  | nil =>
-      simpa using h
-  | cons hd tl ih =>
-    have : validPath G (tl ++ [k] ++ p2) := by
-      cases tl with
-      | nil =>
-        simp only [List.cons_append] at h
-        exact h.2
-      | cons x xs =>
-        simpa using h.right
-    exact ih this
-
-lemma pathEnd_append {n : ℕ} (p1 p2 : Path n) (h : p2 ≠ []) :
-    pathEnd (p1 ++ p2) = pathEnd p2 := by
-  induction p1 with
-  | nil => simp
-  | cons hd tl ih =>
-    simp only [List.cons_append]
-    have hne : tl ++ p2 ≠ [] := by
-      intro heq
-      simp only [List.append_eq_nil_iff] at heq
-      exact h heq.2
-    cases htl : (tl ++ p2) with
-    | nil => exact absurd htl hne
-    | cons a as =>
-      simp only [pathEnd]
-      rw [<- htl]
-      simp [ih]
-
--- TODO: pathend of the prefix of a path is the same as the pathend of the whole path
-lemma h_end_suffix (n : ℕ) (p1 p2 : List (Fin n))
-  (j k : Fin n) (hend : pathEnd (p1 ++ [k] ++ p2) = some j) :
-  pathEnd ([k] ++ p2) = some j := by
-    rw [List.append_assoc] at hend
-    rwa [pathEnd_append p1 ([k] ++ p2) (by simp)] at hend
 
 lemma isPathFromTo_suffix {n} (G : Graph n)
   (p1 p2 : List (Fin n)) (i j k : Fin n)
@@ -337,7 +253,7 @@ lemma isPathFromTo_suffix {n} (G : Graph n)
   have hpath_p2 : validPath G ([k] ++ p2) := by
     exact validPath_suffix G p1 p2 k hpath
   have hj : pathEnd ([k] ++ p2) = j := by
-    exact h_end_suffix n p1 p2 j k hend
+    exact pathEnd_suffix n p1 p2 j k hend
   have hk : pathStart ([k] ++ p2) = k := by
     simp [pathStart]
   exact ⟨hpath_p2, hk, hj⟩
