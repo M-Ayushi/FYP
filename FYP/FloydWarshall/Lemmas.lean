@@ -28,8 +28,7 @@ lemma initDist_eq_sInf_i_neq_j {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ 
   initDist G i j = sInf {w | ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v = i ∨ v = j)
                      ∧ pathWeight G p = w} := by
   apply le_antisymm
-  · -- i ≠ j
-    simp only [initDist, h, ↓reduceIte]
+  · simp only [initDist, h, ↓reduceIte]
     apply le_sInf
     intro w hw
     rcases hw with ⟨p, hp_path, hp_verts⟩
@@ -183,6 +182,26 @@ lemma pathWeight_append_tail  {n : ℕ} (G : Graph n) (p1 p2 : Path n) :
       apply ih
     sorry
 
+lemma validPath_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
+  (hvalid1 : validPath G p1) (hvalid2 : validPath G p2) (h_link : pathEnd p1 = pathStart p2) :
+  validPath G (p1 ++ p2.tail) := by
+    sorry
+
+lemma pathStart_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
+  (ks : List (Fin n)) (i j k : Fin n) (h_link : pathEnd p1 = pathStart p2)
+  (hvalid1 : validPath G p1) (hstart1 : pathStart p1 = some i) (hend1 : pathEnd p1 = some k)
+  (hvalid2 : validPath G p2) (hstart2 : pathStart p2 = some k) (hend2 : pathEnd p2 = some j) :
+  pathStart (p1 ++ p2.tail) = pathStart p1 := by
+    sorry
+
+lemma pathEnd_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
+  (ks : List (Fin n)) (i j k : Fin n) (h_link : pathEnd p1 = pathStart p2)
+  (hvalid1 : validPath G p1) (hstart1 : pathStart p1 = some i) (hend1 : pathEnd p1 = some k)
+  (hvalid2 : validPath G p2) (hstart2 : pathStart p2 = some k) (hend2 : pathEnd p2 = some j) :
+  pathEnd (p1 ++ p2.tail) = pathEnd p2 := by
+    sorry
+
+
 -- helper lemma for showing that any path from i to j that can use k is less than
 -- or equal to the path that goes via k
 lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
@@ -190,23 +209,18 @@ lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin 
   -- apply infimum lemma
   unfold distUpToList
   apply csInf_le
-
   -- 1. BddBelow
   · refine ⟨0, ?_⟩
     intro w hw
     exact zero_le _
-
   -- 2. witness
   ·    -- extract paths
     rcases exists_path_weight_eq_distUpToList G ks i k with
       ⟨p1, hp1_path, hp1_verts, hp1_w⟩
-
     rcases exists_path_weight_eq_distUpToList G ks k j with
       ⟨p2, hp2_path, hp2_verts, hp2_w⟩
-
     -- define concatenation
     let p := p1 ++ p2.tail
-
     refine ⟨p, ?_, ?_, ?_⟩
     · have h_link :
         pathEnd p1 = pathStart p2 := by
@@ -215,13 +229,33 @@ lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin 
       rcases hp2_path with ⟨hvalid2, hstart2, hend2⟩
       refine ⟨?_, ?_, ?_⟩
       · -- show validPath G p
-        sorry
+        exact validPath_append_tail G p1 p2 hvalid1 hvalid2 h_link
       · -- show pathStart p = some i
-        sorry
+        have pathStart_eq : pathStart p = pathStart p1 := by
+          exact pathStart_append_tail G p1 p2 ks i j k
+            h_link hvalid1 hstart1 hend1 hvalid2 hstart2 hend2
+        simp [hstart1, pathStart_eq]
       · -- show pathEnd p = some j
-        sorry
-    · sorry
-    · sorry
+        have pathEnd_eq : pathEnd p = pathEnd p2 := by
+          exact pathEnd_append_tail G p1 p2 ks i j k
+            h_link hvalid1 hstart1 hend1 hvalid2 hstart2 hend2
+        simp [hend2, pathEnd_eq]
+    · intro v hv
+      unfold p at hv
+      apply List.mem_append.mp at hv
+      cases hv with
+      | inl hv1 =>
+          have : v ∈ ks := hp1_verts v hv1
+          exact Or.inl (List.mem_cons_of_mem _ this)
+      | inr hv2 =>
+          have : v ∈ p2 := List.mem_of_mem_tail hv2
+          have : v ∈ ks := hp2_verts v this
+          exact Or.inl (List.mem_cons_of_mem _ this)
+    · simp only [distUpToList] at hp1_w hp2_w
+      rw [<- hp1_w]
+      rw [<- hp2_w]
+      unfold p
+      rw [pathWeight_append_tail G p1 p2]
 
 lemma distUpToList_le_of_path {n : ℕ} (G : Graph n)
   (ks : List (Fin n)) (i j : Fin n) (p : Path n)
