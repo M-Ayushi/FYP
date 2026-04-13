@@ -305,28 +305,29 @@ lemma validPath_suffix {n : ℕ} (G : Graph n)
         simpa using h.right
     exact ih this
 
-lemma h_end_suffix (n : ℕ) (G : Graph n) (p1 p2 : List (Fin n))
-  (i j k : Fin n) (hpath : validPath G (p1 ++ [k] ++ p2))
-  (hstart : pathStart (p1 ++ [k] ++ p2) = some i)
-  (hend : pathEnd (p1 ++ [k] ++ p2) = some j)
-  (hpath_p2 : validPath G ([k] ++ p2)) :
+lemma pathEnd_append {n : ℕ} (p1 p2 : Path n) (h : p2 ≠ []) :
+    pathEnd (p1 ++ p2) = pathEnd p2 := by
+  induction p1 with
+  | nil => simp
+  | cons hd tl ih =>
+    simp only [List.cons_append]
+    have hne : tl ++ p2 ≠ [] := by
+      intro heq
+      simp only [List.append_eq_nil_iff] at heq
+      exact h heq.2
+    cases htl : (tl ++ p2) with
+    | nil => exact absurd htl hne
+    | cons a as =>
+      simp only [pathEnd]
+      rw [<- htl]
+      simp [ih]
+
+-- TODO: pathend of the prefix of a path is the same as the pathend of the whole path
+lemma h_end_suffix (n : ℕ) (p1 p2 : List (Fin n))
+  (j k : Fin n) (hend : pathEnd (p1 ++ [k] ++ p2) = some j) :
   pathEnd ([k] ++ p2) = some j := by
-    induction p1 with
-    | nil =>
-      simp only [List.nil_append] at hend
-      exact hend
-    | cons hd tl ih =>
-      simp only [List.cons_append] at hend
-      have hstart_tl : pathStart (tl ++ [k] ++ p2) = some i := by
-        cases tl with
-        | nil =>
-          simp
-          simp at hend
-          sorry
-        | cons x xs =>
-          simp only [List.cons_append] at hstart
-          sorry
-      sorry
+    rw [List.append_assoc] at hend
+    rwa [pathEnd_append p1 ([k] ++ p2) (by simp)] at hend
 
 lemma isPathFromTo_suffix {n} (G : Graph n)
   (p1 p2 : List (Fin n)) (i j k : Fin n)
@@ -334,10 +335,9 @@ lemma isPathFromTo_suffix {n} (G : Graph n)
   isPathFromTo G ([k] ++ p2) k j := by
   rcases h with ⟨hpath, hstart, hend⟩
   have hpath_p2 : validPath G ([k] ++ p2) := by
-    -- prove suffix of a valid path is valid
     exact validPath_suffix G p1 p2 k hpath
   have hj : pathEnd ([k] ++ p2) = j := by
-    exact h_end_suffix n G p1 p2 i j k hpath hstart hend hpath_p2
+    exact h_end_suffix n p1 p2 j k hend
   have hk : pathStart ([k] ++ p2) = k := by
     simp [pathStart]
   exact ⟨hpath_p2, hk, hj⟩
