@@ -24,6 +24,10 @@ lemma initDist_eq_sInf_i_eq_j {n : ℕ} (G : Graph n) (j : Fin n) :
       rw [hv]
     · simp [initDist]
 
+lemma graph_self_weight_zero {n : ℕ} (G : Graph n) (i : Fin n) :
+  G.w i i = 0 := by
+  sorry
+
 lemma initDist_eq_sInf_i_neq_j_p1 {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
   initDist G i j ≤
     sInf {w | ∃ p, isPathFromTo G p i j ∧
@@ -32,59 +36,55 @@ lemma initDist_eq_sInf_i_neq_j_p1 {n : ℕ} (G : Graph n) (i j : Fin n) (h : i �
   apply le_sInf
   intro w hw
   rcases hw with ⟨p, hp_path, hp_verts⟩
+  rcases hp_verts with ⟨hverts, rfl⟩
+  rcases hp_path with ⟨hvalid, hstart, hend⟩
   induction p with
   | nil =>
-    rcases hp_path with ⟨hvalid, hstart, hend⟩
     contradiction
-  | cons u rest =>
-    have hu : u = i := by
-      rcases hp_path with ⟨_, hstart, _⟩
-      simp only [pathStart] at hstart
-      injection hstart with hstart_eq
-
-    cases rest with
+  | cons x xs =>
+    cases xs with
     | nil =>
-      rcases hp_path with ⟨_, hp_start, hp_end⟩
-      have hu_end : u = j := by
-        simp only [pathEnd] at hp_end
-        injection hp_end with hu_end_eq
-      subst hu_end
-      subst hu
-      exact (h rfl).elim
-    | cons v rest' =>
-      rcases hp_path with ⟨hvalid, hstart, hend⟩
-      have tail_path : isPathFromTo G (v :: rest') i j := by
-        simp only [isPathFromTo, pathStart, pathEnd, validPath] at *
-        constructor
-        · exact hvalid.2
-        · simp only [Option.some.injEq]
-          rename_i hstart_eq
-          constructor
-          · -- v = i
-            have hv : v ∈ u :: v :: rest' := by
-              simp [List.mem_cons]
-            have hverts := hp_verts.1
-            have hv_cases := hverts v hv
-            cases hv_cases with
-            | inl hv_i =>
-              exact hv_i
-            | inr hv_j =>
-              have : i = j := by
-                sorry
-                -- simpa [hv_j] using hu.symm
-              exact (h this).elim
-          · exact hend
-      simp only [ge_iff_le]
-      rename_i tail_ih
-      apply tail_ih
-      · exact tail_path
-      · constructor
-        · intro x hx
-          have hx' : x ∈ u :: v :: rest' := by
-            simp [hx]
-          -- exact hp_verts x hx'
-          sorry
-        · sorry
+        simp only [pathStart, pathEnd] at hstart hend
+        cases hstart
+        cases hend
+        exact (h rfl).elim
+    | cons y ys =>
+      have hx : x = i := by
+        simp only [pathStart, Option.some.injEq] at hstart
+        exact hstart
+      subst hx
+      have hy := hverts y (by simp)
+      cases hy with
+      | inl hy_i =>
+          rename_i ih
+          simp only [pathWeight, ge_iff_le]
+          rw [<- hy_i] at hvalid hstart hend hverts ih
+          rw [<- hy_i]
+          have self_weight : G.w y y = 0 := by
+            exact graph_self_weight_zero G y
+          simp only [self_weight, zero_add, ge_iff_le]
+          have all_x_j : (∀ v ∈ y :: ys, v = y ∨ v = j) := by
+            simp only [List.mem_cons, or_self_left] at hverts
+            simp only [List.mem_cons]
+            exact hverts
+          have hstart' : pathStart (y :: ys) = some y := by
+            simp [pathStart]
+          have hend' : pathEnd (y :: ys) = some j := by
+            simpa [pathEnd] using hend
+          have hverts' : ∀ v ∈ y :: ys, v = y ∨ v = j := by
+            intro v hv
+            apply hverts
+            simp [hv]
+          have hvalid' : validPath G (y :: ys) := by
+            have valid_prefix : validPath G ([y] ++ ys) := by
+              exact validPath_suffix G [y] ys y hvalid
+            exact valid_prefix
+          have h1 := ih all_x_j hvalid' hstart' hend'
+          exact h1
+      | inr hy_j =>
+          simp only [pathWeight, ge_iff_le]
+          rw [<- hy_j]
+          simp
 
 lemma initDist_eq_sInf_i_neq_j {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
   initDist G i j = sInf {w | ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v = i ∨ v = j)
@@ -164,15 +164,15 @@ lemma add_vertex_le {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) 
     right
     simp [h2]
 
+-- normally an infimum is not guaranteed to be attained, but in this case
+    -- we are restricted to only positive integer weights so the infimum is actually a minimum
 lemma exists_path_weight_eq_distUpToList {n : ℕ} (G : Graph n) (ks : List (Fin n)) (i j : Fin n) :
   ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v ∈ ks) ∧ pathWeight G p = distUpToList G ks i j := by
     unfold distUpToList
-    -- normally an infimum is not guaranteed to be attained, but in this case
-    -- we are restricted to only positive integer weights so the infimum is actually a minimum
-  -- apply sInf_exists
-  -- intro w hw
-  -- rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
-  -- exact ⟨p, hp_path, hp_vertices, hp_weight⟩
+    -- apply sInf_exists
+    -- intro w hw
+    -- rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
+    -- exact ⟨p, hp_path, hp_vertices, hp_weight⟩
     sorry
 
 -- helper lemma for showing that any path from i to j that can use k is less than
