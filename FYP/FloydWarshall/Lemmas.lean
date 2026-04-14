@@ -24,10 +24,6 @@ lemma initDist_eq_sInf_i_eq_j {n : ℕ} (G : Graph n) (j : Fin n) :
       rw [hv]
     · simp [initDist]
 
-lemma graph_self_weight_zero {n : ℕ} (G : Graph n) (i : Fin n) :
-  G.w i i = 0 := by
-  sorry
-
 lemma initDist_eq_sInf_i_neq_j_p1 {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
   initDist G i j ≤
     sInf {w | ∃ p, isPathFromTo G p i j ∧
@@ -61,7 +57,7 @@ lemma initDist_eq_sInf_i_neq_j_p1 {n : ℕ} (G : Graph n) (i j : Fin n) (h : i �
           rw [<- hy_i] at hvalid hstart hend hverts ih
           rw [<- hy_i]
           have self_weight : G.w y y = 0 := by
-            exact graph_self_weight_zero G y
+            exact G.self_weight y
           simp only [self_weight, zero_add, ge_iff_le]
           have all_x_j : (∀ v ∈ y :: ys, v = y ∨ v = j) := by
             simp only [List.mem_cons, or_self_left] at hverts
@@ -71,14 +67,9 @@ lemma initDist_eq_sInf_i_neq_j_p1 {n : ℕ} (G : Graph n) (i j : Fin n) (h : i �
             simp [pathStart]
           have hend' : pathEnd (y :: ys) = some j := by
             simpa [pathEnd] using hend
-          have hverts' : ∀ v ∈ y :: ys, v = y ∨ v = j := by
-            intro v hv
-            apply hverts
-            simp [hv]
-          have hvalid' : validPath G (y :: ys) := by
-            have valid_prefix : validPath G ([y] ++ ys) := by
+          have hvalid' : validPath G ([y] ++ ys) := by
               exact validPath_suffix G [y] ys y hvalid
-            exact valid_prefix
+          simp only at hvalid'
           have h1 := ih all_x_j hvalid' hstart' hend'
           exact h1
       | inr hy_j =>

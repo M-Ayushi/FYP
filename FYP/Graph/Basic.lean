@@ -10,6 +10,7 @@ import Mathlib.Order.Basic
 namespace FYP
 
 structure Graph (n : ℕ) where
-    w : Fin n → Fin n → ℕ∞
+    (w : Fin n → Fin n → ℕ∞)
+    (self_weight : ∀ i, w i i = 0)
 
 end FYP
