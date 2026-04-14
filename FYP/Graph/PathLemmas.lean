@@ -3,6 +3,8 @@ import FYP.Graph.Path
 
 namespace FYP
 
+-- Path weight lemmas
+
 lemma pathWeight_concat {n : ℕ} (G : Graph n) :
   ∀ p q : Path n,
     pathEnd p = pathStart q →
@@ -23,6 +25,28 @@ lemma pathWeight_nonneg {n : ℕ} (G : Graph n) (p : Path n) :
     cases ps with
     | nil => simp
     | cons v rest => simp [pathWeight]
+
+lemma pathWeight_append_tail  {n : ℕ} (G : Graph n) (p1 p2 : Path n) :
+  pathWeight G (p1 ++ p2.tail)
+    = pathWeight G p1 + pathWeight G p2 := by
+  induction p1 with
+  | nil =>
+    simp
+    sorry
+  | cons u ps ih =>
+    simp only [List.cons_append]
+    have hpq : pathEnd (u :: ps) = pathStart (p2.tail) := by
+      simp [pathStart]
+      sorry
+    have ih' : pathWeight G (ps ++ p2.tail) = pathWeight G ps + pathWeight G p2 := by
+      apply ih
+    sorry
+
+lemma pathWeight_append {n} (G : Graph n) (k : Fin n)
+  (p q : List (Fin n)) :
+  pathWeight G (p ++ [k] ++ q) =
+    pathWeight G (p ++ [k]) + pathWeight G (k :: q) := by
+    sorry
 
 -- Path validity lemmas
 
@@ -70,6 +94,31 @@ lemma validPath_suffix {n : ℕ} (G : Graph n)
       | cons x xs =>
         simpa using h.right
     exact ih this
+
+lemma validPath_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
+  (ks : List (Fin n)) (i j k : Fin n) (h_link : pathEnd p1 = pathStart p2)
+  (hvalid1 : validPath G p1) (hstart1 : pathStart p1 = some i) (hend1 : pathEnd p1 = some k)
+  (hvalid2 : validPath G p2) (hstart2 : pathStart p2 = some k) (hend2 : pathEnd p2 = some j) :
+  validPath G (p1 ++ p2.tail) := by
+    cases p2 with
+    | nil =>
+      -- contradiction: pathStart p2 = some k impossible
+      simp only [pathStart] at hstart2
+      contradiction
+    | cons x xs =>
+      -- from hstart2 you get x = k
+      have hx : x = k := by
+        simp only [pathStart, Option.some.injEq] at hstart2
+        exact hstart2
+
+      subst hx
+      simp only [List.tail_cons]
+      cases xs with
+      | nil =>
+        simp only [List.append_nil]
+        exact hvalid1
+      | cons y ys =>
+        sorry
 
 -- Path start/end lemmas
 
@@ -127,5 +176,19 @@ lemma pathEnd_suffix (n : ℕ) (p1 p2 : List (Fin n))
   pathEnd ([k] ++ p2) = some j := by
     rw [List.append_assoc] at hend
     rwa [pathEnd_append p1 ([k] ++ p2) (by simp)] at hend
+
+lemma pathStart_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
+  (ks : List (Fin n)) (i j k : Fin n) (h_link : pathEnd p1 = pathStart p2)
+  (hvalid1 : validPath G p1) (hstart1 : pathStart p1 = some i) (hend1 : pathEnd p1 = some k)
+  (hvalid2 : validPath G p2) (hstart2 : pathStart p2 = some k) (hend2 : pathEnd p2 = some j) :
+  pathStart (p1 ++ p2.tail) = pathStart p1 := by
+    sorry
+
+lemma pathEnd_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
+  (ks : List (Fin n)) (i j k : Fin n) (h_link : pathEnd p1 = pathStart p2)
+  (hvalid1 : validPath G p1) (hstart1 : pathStart p1 = some i) (hend1 : pathEnd p1 = some k)
+  (hvalid2 : validPath G p2) (hstart2 : pathStart p2 = some k) (hend2 : pathEnd p2 = some j) :
+  pathEnd (p1 ++ p2.tail) = pathEnd p2 := by
+    sorry
 
 end FYP
