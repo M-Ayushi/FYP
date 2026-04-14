@@ -160,11 +160,13 @@ lemma add_vertex_le {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) 
 
 lemma exists_path_weight_eq_distUpToList {n : ℕ} (G : Graph n) (ks : List (Fin n)) (i j : Fin n) :
   ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v ∈ ks) ∧ pathWeight G p = distUpToList G ks i j := by
+    unfold distUpToList
+
   -- apply sInf_exists
   -- intro w hw
   -- rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
   -- exact ⟨p, hp_path, hp_vertices, hp_weight⟩
-  sorry
+    sorry
 
 lemma pathWeight_append_tail  {n : ℕ} (G : Graph n) (p1 p2 : Path n) :
   pathWeight G (p1 ++ p2.tail)
@@ -183,9 +185,29 @@ lemma pathWeight_append_tail  {n : ℕ} (G : Graph n) (p1 p2 : Path n) :
     sorry
 
 lemma validPath_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
-  (hvalid1 : validPath G p1) (hvalid2 : validPath G p2) (h_link : pathEnd p1 = pathStart p2) :
+  (ks : List (Fin n)) (i j k : Fin n) (h_link : pathEnd p1 = pathStart p2)
+  (hvalid1 : validPath G p1) (hstart1 : pathStart p1 = some i) (hend1 : pathEnd p1 = some k)
+  (hvalid2 : validPath G p2) (hstart2 : pathStart p2 = some k) (hend2 : pathEnd p2 = some j) :
   validPath G (p1 ++ p2.tail) := by
-    sorry
+    cases p2 with
+    | nil =>
+      -- contradiction: pathStart p2 = some k impossible
+      simp only [pathStart] at hstart2
+      contradiction
+    | cons x xs =>
+      -- from hstart2 you get x = k
+      have hx : x = k := by
+        simp only [pathStart, Option.some.injEq] at hstart2
+        exact hstart2
+
+      subst hx
+      simp only [List.tail_cons]
+      cases xs with
+      | nil =>
+        simp only [List.append_nil]
+        exact hvalid1
+      | cons y ys =>
+        sorry
 
 lemma pathStart_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
   (ks : List (Fin n)) (i j k : Fin n) (h_link : pathEnd p1 = pathStart p2)
@@ -201,6 +223,11 @@ lemma pathEnd_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
   pathEnd (p1 ++ p2.tail) = pathEnd p2 := by
     sorry
 
+lemma pathWeight_append {n} (G : Graph n) (k : Fin n)
+  (p q : List (Fin n)) :
+  pathWeight G (p ++ [k] ++ q) =
+    pathWeight G (p ++ [k]) + pathWeight G (k :: q) := by
+    sorry
 
 -- helper lemma for showing that any path from i to j that can use k is less than
 -- or equal to the path that goes via k
@@ -229,7 +256,8 @@ lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin 
       rcases hp2_path with ⟨hvalid2, hstart2, hend2⟩
       refine ⟨?_, ?_, ?_⟩
       · -- show validPath G p
-        exact validPath_append_tail G p1 p2 hvalid1 hvalid2 h_link
+        exact validPath_append_tail G p1 p2 ks i j k
+          h_link hvalid1 hstart1 hend1 hvalid2 hstart2 hend2
       · -- show pathStart p = some i
         have pathStart_eq : pathStart p = pathStart p1 := by
           exact pathStart_append_tail G p1 p2 ks i j k
@@ -291,12 +319,6 @@ lemma isPathFromTo_suffix {n} (G : Graph n)
   have hk : pathStart ([k] ++ p2) = k := by
     simp [pathStart]
   exact ⟨hpath_p2, hk, hj⟩
-
-lemma pathWeight_append {n} (G : Graph n) (k : Fin n)
-  (p q : List (Fin n)) :
-  pathWeight G (p ++ [k] ++ q) =
-    pathWeight G (p ++ [k]) + pathWeight G (k :: q) := by
-    sorry
 
 -- helper lemma showing that any path from i to j that can use k is at least as long
 -- as the shorter of the path that doesn't use k and the path that goes via k
