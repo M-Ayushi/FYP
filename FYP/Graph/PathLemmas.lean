@@ -3,51 +3,6 @@ import FYP.Graph.Path
 
 namespace FYP
 
--- Path weight lemmas
-
-lemma pathWeight_concat {n : ℕ} (G : Graph n) :
-  ∀ p q : Path n,
-    pathEnd p = pathStart q →
-      pathWeight G (concatPath p q) =
-        pathWeight G p + pathWeight G q := by
-  intro p q hpq
-  induction p with
-  | nil =>
-    simp [concatPath]
-  | cons u ps ih =>
-    sorry
-
-lemma pathWeight_nonneg {n : ℕ} (G : Graph n) (p : Path n) :
-  0 ≤ pathWeight G p := by
-  induction p with
-  | nil => simp
-  | cons u ps ih =>
-    cases ps with
-    | nil => simp
-    | cons v rest => simp [pathWeight]
-
-lemma pathWeight_append_tail  {n : ℕ} (G : Graph n) (p1 p2 : Path n) :
-  pathWeight G (p1 ++ p2.tail)
-    = pathWeight G p1 + pathWeight G p2 := by
-  induction p1 with
-  | nil =>
-    simp
-    sorry
-  | cons u ps ih =>
-    simp only [List.cons_append]
-    have hpq : pathEnd (u :: ps) = pathStart (p2.tail) := by
-      simp [pathStart]
-      sorry
-    have ih' : pathWeight G (ps ++ p2.tail) = pathWeight G ps + pathWeight G p2 := by
-      apply ih
-    sorry
-
-lemma pathWeight_append {n} (G : Graph n) (k : Fin n)
-  (p q : List (Fin n)) :
-  pathWeight G (p ++ [k] ++ q) =
-    pathWeight G (p ++ [k]) + pathWeight G (k :: q) := by
-    sorry
-
 -- Path validity lemmas
 
 lemma path_valid {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
@@ -96,7 +51,7 @@ lemma validPath_suffix {n : ℕ} (G : Graph n)
     exact ih this
 
 lemma validPath_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
-  (ks : List (Fin n)) (i j k : Fin n) (h_link : pathEnd p1 = pathStart p2)
+  (i j k : Fin n) (h_link : pathEnd p1 = pathStart p2)
   (hvalid1 : validPath G p1) (hstart1 : pathStart p1 = some i) (hend1 : pathEnd p1 = some k)
   (hvalid2 : validPath G p2) (hstart2 : pathStart p2 = some k) (hend2 : pathEnd p2 = some j) :
   validPath G (p1 ++ p2.tail) := by
@@ -178,17 +133,90 @@ lemma pathEnd_suffix (n : ℕ) (p1 p2 : List (Fin n))
     rwa [pathEnd_append p1 ([k] ++ p2) (by simp)] at hend
 
 lemma pathStart_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
-  (ks : List (Fin n)) (i j k : Fin n) (h_link : pathEnd p1 = pathStart p2)
-  (hvalid1 : validPath G p1) (hstart1 : pathStart p1 = some i) (hend1 : pathEnd p1 = some k)
-  (hvalid2 : validPath G p2) (hstart2 : pathStart p2 = some k) (hend2 : pathEnd p2 = some j) :
+  (i k : Fin n) (h_link : pathEnd p1 = pathStart p2)
+  (hvalid1 : validPath G p1) (hstart1 : pathStart p1 = some i)
+  (hend1 : pathEnd p1 = some k) :
   pathStart (p1 ++ p2.tail) = pathStart p1 := by
-    sorry
+    unfold pathStart
+    have hp1_ne_nil : p1 ≠ [] := by
+      intro h
+      have : pathStart p1 = none := by
+        rw [h]
+        simp [pathStart]
+      rw [hstart1] at this
+      contradiction
+    cases p1 with
+    | nil =>
+      contradiction
+    | cons x xs =>
+      simp
 
 lemma pathEnd_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
   (ks : List (Fin n)) (i j k : Fin n) (h_link : pathEnd p1 = pathStart p2)
   (hvalid1 : validPath G p1) (hstart1 : pathStart p1 = some i) (hend1 : pathEnd p1 = some k)
   (hvalid2 : validPath G p2) (hstart2 : pathStart p2 = some k) (hend2 : pathEnd p2 = some j) :
   pathEnd (p1 ++ p2.tail) = pathEnd p2 := by
+    have h : (List.tail p2) ≠ [] := by sorry
+    have h2 := pathEnd_append p1 (List.tail p2) h
+    simp [h2]
+    sorry
+
+-- Path weight lemmas
+
+lemma pathWeight_concat {n : ℕ} (G : Graph n) :
+  ∀ p q : Path n,
+    pathEnd p = pathStart q →
+      pathWeight G (concatPath p q) =
+        pathWeight G p + pathWeight G q := by
+  intro p q hpq
+  induction p with
+  | nil =>
+    simp [concatPath]
+  | cons u ps ih =>
+    sorry
+
+lemma pathWeight_nonneg {n : ℕ} (G : Graph n) (p : Path n) :
+  0 ≤ pathWeight G p := by
+  induction p with
+  | nil => simp
+  | cons u ps ih =>
+    cases ps with
+    | nil => simp
+    | cons v rest => simp [pathWeight]
+
+lemma pathWeight_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
+  (hvalid1 : validPath G p1) (hvalid2 : validPath G p2) (hlink : pathEnd p1 = pathStart p2) :
+  pathWeight G (p1 ++ p2.tail) = pathWeight G p1 + pathWeight G p2 := by
+    induction p1 with
+    | nil =>
+      contradiction
+    | cons x xs ih =>
+      cases xs with
+      | nil =>
+        simp only [pathWeight]
+        have rebuild_p2 : p2 = [x] ++ p2.tail := by
+          cases p2 with
+          | nil =>
+            contradiction
+          | cons v vs =>
+            simp only [List.tail_cons, List.cons_append, List.nil_append, List.cons.injEq, and_true]
+            simp only [pathEnd, pathStart, Option.some.injEq] at hlink
+            exact Fin.eq_of_val_eq (congrArg Fin.val (id (Eq.symm hlink)))
+        rw [rebuild_p2]
+        simp
+      | cons y ys =>
+        simp only [List.tail, List.cons_append, pathWeight_cons, pathWeight] at *
+        have hvalid :validPath G (y :: ys) := by
+          exact validPath_suffix G [x] ys y hvalid1
+        have hlink' : pathEnd (y :: ys) = pathStart p2 := by
+          simpa [pathEnd] using hlink
+        have := ih hvalid hlink'
+        simp [this, add_assoc]
+
+lemma pathWeight_append {n} (G : Graph n) (k : Fin n)
+  (p q : List (Fin n)) :
+  pathWeight G (p ++ [k] ++ q) =
+    pathWeight G (p ++ [k]) + pathWeight G (k :: q) := by
     sorry
 
 end FYP

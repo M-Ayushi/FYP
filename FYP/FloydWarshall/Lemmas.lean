@@ -156,7 +156,7 @@ lemma add_vertex_le {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) 
     simp [h2]
 
 -- normally an infimum is not guaranteed to be attained, but in this case
-    -- we are restricted to only positive integer weights so the infimum is actually a minimum
+-- we are restricted to only positive integer weights so the infimum is actually a minimum
 lemma exists_path_weight_eq_distUpToList {n : ℕ} (G : Graph n) (ks : List (Fin n)) (i j : Fin n) :
   ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v ∈ ks) ∧ pathWeight G p = distUpToList G ks i j := by
     unfold distUpToList
@@ -185,20 +185,18 @@ lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin 
       ⟨p2, hp2_path, hp2_verts, hp2_w⟩
     -- define concatenation
     let p := p1 ++ p2.tail
+    have h_link :
+      pathEnd p1 = pathStart p2 := by
+        simp [getPathEnd G p1 i k hp1_path, getPathStart G p2 k j hp2_path]
+    rcases hp1_path with ⟨hvalid1, hstart1, hend1⟩
+    rcases hp2_path with ⟨hvalid2, hstart2, hend2⟩
     refine ⟨p, ?_, ?_, ?_⟩
-    · have h_link :
-        pathEnd p1 = pathStart p2 := by
-          simp [getPathEnd G p1 i k hp1_path, getPathStart G p2 k j hp2_path]
-      rcases hp1_path with ⟨hvalid1, hstart1, hend1⟩
-      rcases hp2_path with ⟨hvalid2, hstart2, hend2⟩
-      refine ⟨?_, ?_, ?_⟩
+    · refine ⟨?_, ?_, ?_⟩
       · -- show validPath G p
-        exact validPath_append_tail G p1 p2 ks i j k
-          h_link hvalid1 hstart1 hend1 hvalid2 hstart2 hend2
+        exact validPath_append_tail G p1 p2 i j k h_link hvalid1 hstart1 hend1 hvalid2 hstart2 hend2
       · -- show pathStart p = some i
         have pathStart_eq : pathStart p = pathStart p1 := by
-          exact pathStart_append_tail G p1 p2 ks i j k
-            h_link hvalid1 hstart1 hend1 hvalid2 hstart2 hend2
+          exact pathStart_append_tail G p1 p2 i k h_link hvalid1 hstart1 hend1
         simp [hstart1, pathStart_eq]
       · -- show pathEnd p = some j
         have pathEnd_eq : pathEnd p = pathEnd p2 := by
@@ -220,7 +218,7 @@ lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin 
       rw [<- hp1_w]
       rw [<- hp2_w]
       unfold p
-      rw [pathWeight_append_tail G p1 p2]
+      rw [pathWeight_append_tail G p1 p2 hvalid1 hvalid2 h_link]
 
 lemma distUpToList_le_of_path {n : ℕ} (G : Graph n)
   (ks : List (Fin n)) (i j : Fin n) (p : Path n)
