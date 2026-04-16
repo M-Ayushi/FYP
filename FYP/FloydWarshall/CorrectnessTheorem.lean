@@ -16,19 +16,12 @@ lemma fw_invariant {n : ℕ} (G : Graph n) :
   | append_singleton ks k ih =>
     intro i j
     simp only [List.foldl_append, List.foldl]
-    -- Now LHS is: fwStep (ks.foldl fwStep (initDist G)) k i j
-    -- IH gives:   (ks.foldl fwStep (initDist G)) i j = distUpToList G ks i j
-    -- So we can rewrite the inner matrix using ih
     have hfun: (List.foldl fwStep (initDist G) ks) =
         (fun i j => distUpToList G ks i j) :=
       funext (fun i => funext (fun j => ih i j))
     rw [hfun]
-    -- Now LHS is: fwStep (distUpToList G ks) k i j
-    --           = min (distUpToList G ks i j)
-    --                 (distUpToList G ks i k + distUpToList G ks k j)
     simp only [fwStep]
-    -- RHS: distUpToList G (ks ++ [k]) i j
-    rw [sInf_split G ks k i j]
+    rw [fwStep_eq G ks k i j]
     simp [distUpToList, or_comm]
 
 theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :
@@ -40,7 +33,7 @@ theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :
   -- is the infimum over all paths from i to j, which is exactly dist G i j
   simp only [dist, distUpToList]
   apply le_antisymm
-  · -- show distUpToList G (List.finRange n) i j ≤ dist
+  · -- show distUpToList G (List.finRange n) i j ≤ dist G i j
     apply le_sInf
     intro w hw
     rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩

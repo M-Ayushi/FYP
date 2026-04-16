@@ -24,7 +24,7 @@ lemma initDist_eq_sInf_i_eq_j {n : ℕ} (G : Graph n) (j : Fin n) :
       rw [hv]
     · simp [initDist]
 
-lemma initDist_eq_sInf_i_neq_j_p1 {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
+lemma initDist_le_sInf_i_neq_j_by_path_witness {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
   initDist G i j ≤
     sInf {w | ∃ p, isPathFromTo G p i j ∧
             (∀ v ∈ p, v = i ∨ v = j) ∧ pathWeight G p = w} := by
@@ -81,7 +81,7 @@ lemma initDist_eq_sInf_i_neq_j {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ 
   initDist G i j = sInf {w | ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v = i ∨ v = j)
                      ∧ pathWeight G p = w} := by
   apply le_antisymm
-  · exact initDist_eq_sInf_i_neq_j_p1 G i j h
+  · exact initDist_le_sInf_i_neq_j_by_path_witness G i j h
   · apply sInf_le
     refine ⟨[i, j], ⟨?path_valid, ?path_start, ?path_end⟩, ?verts⟩
     · simp [validPath]
@@ -115,6 +115,23 @@ lemma initDist_eq_sInf {n : ℕ} (G : Graph n) (i j : Fin n) :
   · -- case i ≠ j
     exact initDist_eq_sInf_i_neq_j G i j h
 
+
+lemma witness (n : ℕ) (G : Graph n) (ks1 ks2 : List (Fin n)) (h : ∀ v ∈ ks1, v ∈ ks2)
+  (i j : Fin n) (w : ℕ∞) (p : Path n) (hp_path : isPathFromTo G p i j)
+  (hp_vertices : ∀ v ∈ p, v ∈ ks1 ∨ v = i ∨ v = j) (hp_weight : pathWeight G p = w) :
+  distUpToList G ks2 i j ≤ w := by
+    apply sInf_le
+    refine ⟨p, hp_path, ?_, hp_weight⟩
+    intro v hv
+    specialize hp_vertices v hv
+    cases hp_vertices with
+    | inl hks1 =>
+      left
+      exact h v hks1
+    | inr hij =>
+      right
+      simp [hij]
+
 -- adding a vertex to the list of intermediate vertices is a monotone operation
 -- i.e. it can only decrease distances
 lemma distUpToList_mono {n : ℕ} (G : Graph n) (ks1 ks2 : List (Fin n))
@@ -124,51 +141,28 @@ lemma distUpToList_mono {n : ℕ} (G : Graph n) (ks1 ks2 : List (Fin n))
   apply le_sInf
   intro w hw
   rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
-  apply sInf_le
-  refine ⟨p, hp_path, ?_, hp_weight⟩
-  intro v hv
-  specialize hp_vertices v hv
-  cases hp_vertices with
-  | inl hks1 =>
-    left
-    exact h v hks1
-  | inr hij =>
-    right
-    simp [hij]
+  exact witness n G ks1 ks2 h i j w p hp_path hp_vertices hp_weight
 
 -- helper lemma showing that adding vertex k to the list of intermediate
 -- vertices can only decrease distances
-lemma add_vertex_le {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
+lemma fwStep_le_left {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j ≤ distUpToList G ks i j := by
   apply le_sInf
   intro w hw
   rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
-  apply sInf_le
-  refine ⟨p, hp_path, ?_, hp_weight⟩
-  intro v hv
-  specialize hp_vertices v hv
-  cases hp_vertices with
-  | inl h1 =>
-    left
-    simp [h1]
-  | inr h2 =>
-    right
-    simp [h2]
+  exact witness n G ks (k :: ks) (fun v hv => List.mem_cons_of_mem _ hv)
+    i j w p hp_path hp_vertices hp_weight
 
 -- normally an infimum is not guaranteed to be attained, but in this case
 -- we are restricted to only positive integer weights so the infimum is actually a minimum
 lemma exists_path_weight_eq_distUpToList {n : ℕ} (G : Graph n) (ks : List (Fin n)) (i j : Fin n) :
   ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v ∈ ks) ∧ pathWeight G p = distUpToList G ks i j := by
     unfold distUpToList
-    -- apply sInf_exists
-    -- intro w hw
-    -- rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
-    -- exact ⟨p, hp_path, hp_vertices, hp_weight⟩
     sorry
 
 -- helper lemma for showing that any path from i to j that can use k is less than
 -- or equal to the path that goes via k
-lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
+lemma fwStep_le_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j := by
   -- apply infimum lemma
   unfold distUpToList
@@ -185,22 +179,21 @@ lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin 
       ⟨p2, hp2_path, hp2_verts, hp2_w⟩
     -- define concatenation
     let p := p1 ++ p2.tail
-    have h_link :
-      pathEnd p1 = pathStart p2 := by
-        simp [getPathEnd G p1 i k hp1_path, getPathStart G p2 k j hp2_path]
     rcases hp1_path with ⟨hvalid1, hstart1, hend1⟩
     rcases hp2_path with ⟨hvalid2, hstart2, hend2⟩
+    have h_link : pathEnd p1 = pathStart p2 := by
+      simp [hend1, hstart2]
     refine ⟨p, ?_, ?_, ?_⟩
     · refine ⟨?_, ?_, ?_⟩
       · -- show validPath G p
-        exact validPath_append_tail G p1 p2 k h_link hvalid1 hend1 hvalid2 hstart2
+        exact validPath_append_tail G p1 p2 h_link hvalid1 hvalid2
       · -- show pathStart p = some i
         have pathStart_eq : pathStart p = pathStart p1 := by
-          exact pathStart_append_tail p1 p2 i k h_link hstart1 hend1
+          exact pathStart_append_tail p1 p2 i hstart1
         simp [hstart1, pathStart_eq]
       · -- show pathEnd p = some j
         have pathEnd_eq : pathEnd p = pathEnd p2 := by
-          exact pathEnd_append_tail p1 p2 j k h_link hend1 hstart2 hend2
+          exact pathEnd_append_tail p1 p2 j h_link hend2
         simp [hend2, pathEnd_eq]
     · intro v hv
       unfold p at hv
@@ -348,7 +341,7 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
       exact h1
 
 -- proof for adding vertex k to the list of intermediate vertices
-lemma sInf_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
+lemma fwStep_eq {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j)
     = distUpToList G (k :: ks) i j := by
   apply le_antisymm
@@ -360,10 +353,10 @@ lemma sInf_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
     apply le_min
     · -- show distUpToList G (k :: ks) i j ≤ distUpToList G ks i j
       -- i.e. paths that can use k can only be shorter than paths that can't use k
-      exact add_vertex_le G ks k i j
+      exact fwStep_le_left G ks k i j
     · -- show distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j
       -- i.e. any path from i to j that can use k can be split into
       -- a path from i to k and a path from k to j
-      exact add_vertex_split G ks k i j
+      exact fwStep_le_split G ks k i j
 
 end FYP
