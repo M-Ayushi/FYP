@@ -196,12 +196,11 @@ lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin 
         exact validPath_append_tail G p1 p2 k h_link hvalid1 hend1 hvalid2 hstart2
       · -- show pathStart p = some i
         have pathStart_eq : pathStart p = pathStart p1 := by
-          exact pathStart_append_tail G p1 p2 i k h_link hvalid1 hstart1 hend1
+          exact pathStart_append_tail p1 p2 i k h_link hstart1 hend1
         simp [hstart1, pathStart_eq]
       · -- show pathEnd p = some j
         have pathEnd_eq : pathEnd p = pathEnd p2 := by
-          exact pathEnd_append_tail G p1 p2 ks i j k
-            h_link hvalid1 hstart1 hend1 hvalid2 hstart2 hend2
+          exact pathEnd_append_tail p1 p2 j k h_link hend1 hstart2 hend2
         simp [hend2, pathEnd_eq]
     · intro v hv
       unfold p at hv
