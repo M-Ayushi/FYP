@@ -193,7 +193,7 @@ lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin 
     refine ⟨p, ?_, ?_, ?_⟩
     · refine ⟨?_, ?_, ?_⟩
       · -- show validPath G p
-        exact validPath_append_tail G p1 p2 i j k h_link hvalid1 hstart1 hend1 hvalid2 hstart2 hend2
+        exact validPath_append_tail G p1 p2 k h_link hvalid1 hend1 hvalid2 hstart2
       · -- show pathStart p = some i
         have pathStart_eq : pathStart p = pathStart p1 := by
           exact pathStart_append_tail G p1 p2 i k h_link hvalid1 hstart1 hend1
@@ -218,7 +218,7 @@ lemma add_vertex_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin 
       rw [<- hp1_w]
       rw [<- hp2_w]
       unfold p
-      rw [pathWeight_append_tail G p1 p2 hvalid1 hvalid2 h_link]
+      rw [pathWeight_append_tail G p1 p2 hvalid1 h_link]
 
 lemma distUpToList_le_of_path {n : ℕ} (G : Graph n)
   (ks : List (Fin n)) (i j : Fin n) (p : Path n)
@@ -228,32 +228,6 @@ lemma distUpToList_le_of_path {n : ℕ} (G : Graph n)
     unfold distUpToList
     apply sInf_le
     use p
-
-lemma isPathFromTo_prefix {n : ℕ} (G : Graph n)
-  (p1 p2 : List (Fin n)) (i j k : Fin n)
-  (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
-  isPathFromTo G (p1 ++ [k]) i k := by
-  rcases h with ⟨h_valid, h_start, h_end⟩
-  have h_valid_prefix : validPath G (p1 ++ [k]) := by
-    exact validPath_prefix G p1 p2 k h_valid
-  have h_start_prefix : pathStart (p1 ++ [k]) = some i := by
-    exact pathStart_prefix p1 p2 i k h_start
-  have h_end_prefix : pathEnd (p1 ++ [k]) = some k := by
-    simp only [pathEnd_append_singleton]
-  exact ⟨h_valid_prefix, h_start_prefix, h_end_prefix⟩
-
-lemma isPathFromTo_suffix {n} (G : Graph n)
-  (p1 p2 : List (Fin n)) (i j k : Fin n)
-  (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
-  isPathFromTo G ([k] ++ p2) k j := by
-  rcases h with ⟨hpath, hstart, hend⟩
-  have hpath_p2 : validPath G ([k] ++ p2) := by
-    exact validPath_suffix G p1 p2 k hpath
-  have hj : pathEnd ([k] ++ p2) = j := by
-    exact pathEnd_suffix n p1 p2 j k hend
-  have hk : pathStart ([k] ++ p2) = k := by
-    simp [pathStart]
-  exact ⟨hpath_p2, hk, hj⟩
 
 -- helper lemma showing that any path from i to j that can use k is at least as long
 -- as the shorter of the path that doesn't use k and the path that goes via k
