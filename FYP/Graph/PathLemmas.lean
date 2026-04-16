@@ -276,7 +276,16 @@ lemma pathWeight_append {n} (G : Graph n) (k : Fin n)
   (p q : List (Fin n)) :
   pathWeight G (p ++ [k] ++ q) =
     pathWeight G (p ++ [k]) + pathWeight G (k :: q) := by
-    sorry
+    induction p with
+    | nil =>
+      simp
+    | cons v vs ih =>
+      cases vs with
+      | nil =>
+        simp
+      | cons u rest =>
+        simp at ih
+        simp [ih, add_assoc]
 
 -- isPathFromTo lemmas
 
