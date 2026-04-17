@@ -94,6 +94,22 @@ lemma pathStart_prefix {n : ℕ} (p1 p2 : List (Fin n)) (k : Fin n) :
     | cons hd tl =>
       simp [pathStart]
 
+lemma pathStart_append_tail {n : ℕ} (p1 p2 : Path n) (i : Fin n)
+  (hstart1 : pathStart p1 = some i) :
+  pathStart (p1 ++ p2.tail) = pathStart p1 := by
+    unfold pathStart
+    have hp1_ne_nil : p1 ≠ [] := by
+      intro h
+      have : pathStart p1 = none := by
+        simp [h, pathStart]
+      rw [hstart1] at this
+      contradiction
+    cases p1 with
+    | nil =>
+      contradiction
+    | cons x xs =>
+      simp
+
 lemma pathEnd_append {n : ℕ} (p1 p2 : Path n) (h : p2 ≠ []) :
   pathEnd (p1 ++ p2) = pathEnd p2 := by
     induction p1 with
@@ -117,22 +133,6 @@ lemma pathEnd_suffix (n : ℕ) (p1 p2 : List (Fin n)) (k : Fin n) :
     simp at h
     simp only [List.cons_append, List.nil_append, List.append_assoc]
     exact h.symm
-
-lemma pathStart_append_tail {n : ℕ} (p1 p2 : Path n) (i : Fin n)
-  (hstart1 : pathStart p1 = some i) :
-  pathStart (p1 ++ p2.tail) = pathStart p1 := by
-    unfold pathStart
-    have hp1_ne_nil : p1 ≠ [] := by
-      intro h
-      have : pathStart p1 = none := by
-        simp [h, pathStart]
-      rw [hstart1] at this
-      contradiction
-    cases p1 with
-    | nil =>
-      contradiction
-    | cons x xs =>
-      simp
 
 lemma pathEnd_append_tail {n : ℕ} (p1 p2 : Path n)
   (j : Fin n) (h_link : pathEnd p1 = pathStart p2)

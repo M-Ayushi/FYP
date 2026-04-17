@@ -2,7 +2,7 @@ import FYP.Graph.Basic
 
 namespace FYP
 
-lemma two_list_membership {n : ℕ} (i j : Fin n) :
+lemma mem_pair_iff {n : ℕ} (i j : Fin n) :
  ∀ v ∈ [i, j], v = i ∨ v = j := by
   intro v hv
   cases List.mem_cons.mp hv with
@@ -14,6 +14,7 @@ lemma two_list_membership {n : ℕ} (i j : Fin n) :
     simp only [List.mem_cons, List.not_mem_nil, or_false] at h2
     exact h2
 
+-- TODO : might not be necessary
 lemma add_min : ∀ (a b c : ℕ∞), a + min b c = min (a + b) (a + c) := by
     intros a b c
     rcases le_or_gt b c with h | h
