@@ -270,10 +270,8 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
           | inl hk => exact Or.inr (Or.inl hk)
           | inr hks => exact Or.inl hks
         exact distUpToList_le_of_path G ks k j ([k] ++ p2) hp_k_j hp_verts_p2
-      -- pathWeight p = pathWeight p1 + pathWeight p2
       have hp_sum :
         pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
-        -- use hp_split + pathWeight_append lemma
           simp only [hp_split, List.append_assoc, List.cons_append, List.nil_append]
           have hlist : p1 ++ k :: p2 = (p1 ++ [k]) ++ p2 := by
             simp [List.append_assoc, List.cons_append, List.nil_append]
@@ -313,7 +311,7 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
       exact h1
 
 -- proof for adding vertex k to the list of intermediate vertices
-lemma fwStep_eq {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
+lemma fwStep_invariant {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j)
     = distUpToList G (k :: ks) i j := by
   apply le_antisymm

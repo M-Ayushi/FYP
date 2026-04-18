@@ -21,7 +21,7 @@ lemma fw_invariant {n : ℕ} (G : Graph n) :
       funext (fun i => funext (fun j => ih i j))
     rw [hfun]
     simp only [fwStep]
-    rw [fwStep_eq G ks k i j]
+    rw [fwStep_invariant G ks k i j]
     simp [distUpToList, or_comm]
 
 theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :

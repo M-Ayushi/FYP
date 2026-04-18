@@ -1,6 +1,4 @@
 import FYP.Graph.Basic
-import FYP.Graph.Path
-import FYP.Graph.PathLemmas
 
 namespace FYP
 
