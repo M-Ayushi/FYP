@@ -14,69 +14,61 @@ lemma rebuild_path {p : Path n} (x : Fin n) (hx : x = pathStart p) :
 
 -- Path validity lemmas
 
+-- Left as sorry
+-- If an edge weight is infinite, then there is no direct edge
+-- between those vertices.
+-- But the edge weight will always be either a finite number or ∞
+-- Thus can be interpreted as always existing, but possibly with infinite weight.
 lemma path_valid {n : ℕ} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
   ¬G.w i j = ⊤ := by sorry
 
 lemma validPath_prefix {n : ℕ} (G : Graph n)
   (p1 p2 : List (Fin n)) (k : Fin n) (h : validPath G (p1 ++ [k] ++ p2)) :
   validPath G (p1 ++ [k]) := by
-  induction p1 with
-  | nil =>
-    simp [validPath]
-  | cons hd tl ih =>
-    cases tl with
-    | nil =>
-      exact ⟨ h.1, trivial ⟩
-    | cons v rest =>
-      rcases h with ⟨h_edge, h_tail⟩
-      have h_tail' : validPath G (v :: (rest ++ [k] ++ p2)) := by
-        simpa [List.append_assoc] using h_tail
-      have h_mid : validPath G (v :: rest ++ [k]) :=
-        ih h_tail'
-      exact ⟨ h_edge, h_mid ⟩
-
-lemma validPath_suffix {n : ℕ} (G : Graph n)
-  (p1 p2 : List (Fin n)) (k : Fin n) (h : validPath G (p1 ++ [k] ++ p2)) :
-  validPath G ([k] ++ p2) := by
-  induction p1 with
-  | nil =>
-    simpa using h
-  | cons hd tl ih =>
-    have : validPath G (tl ++ [k] ++ p2) := by
+    induction p1 with
+    | nil => simp [validPath]
+    | cons hd tl ih =>
       cases tl with
       | nil =>
-        simp only [List.cons_append] at h
-        exact h.2
-      | cons x xs =>
-        simpa using h.right
-    exact ih this
+        exact ⟨ h.1, trivial ⟩
+      | cons v rest =>
+        rcases h with ⟨hedge, htail⟩
+        have htail' : validPath G (v :: (rest ++ [k] ++ p2)) := by
+          simpa [List.append_assoc] using htail
+        exact ⟨ hedge, ih htail' ⟩
+
+lemma validPath_suffix {n : ℕ} (G : Graph n) (p1 p2 : List (Fin n))
+  (k : Fin n) (h : validPath G (p1 ++ [k] ++ p2)) :
+  validPath G ([k] ++ p2) := by
+    induction p1 with
+    | nil => exact h
+    | cons hd tl ih =>
+      have : validPath G (tl ++ [k] ++ p2) := by
+        cases tl with
+        | nil => exact h.2
+        | cons x xs => exact h.2
+      exact ih this
 
 lemma validPath_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
-  (h_link : pathEnd p1 = pathStart p2) (hvalid1 : validPath G p1)
+  (hlink : pathEnd p1 = pathStart p2) (hvalid1 : validPath G p1)
   (hvalid2 : validPath G p2) : validPath G (p1 ++ p2.tail) := by
     induction p1 with
-    | nil =>
-      contradiction
+    | nil => contradiction
     | cons x xs =>
       cases xs with
       | nil =>
-        have same_path : p2 = [x] ++ List.tail p2 := by
-          exact rebuild_path x h_link
-        rw [<- same_path]
-        exact hvalid2
+        simp [<- rebuild_path x hlink, hvalid2]
       | cons y ys =>
         rename_i ih
         have hlink' : pathEnd (y :: ys) = pathStart p2 := by
-          rw [<- h_link]
-          exact (Option.map_inj_right fun x y a ↦ a).mp rfl
+          simp [<- hlink, pathEnd]
         have hvalid' : validPath G (y :: ys) := by
           exact validPath_suffix G [x] ys y hvalid1
-        have ih' := ih hlink' hvalid'
-        simp only [List.cons_append, validPath, ne_eq]
+        simp only [List.cons_append]
         constructor
-        · simp only [validPath, ne_eq] at hvalid1
+        · simp only [validPath] at hvalid1
           exact hvalid1.1
-        · exact ih'
+        · exact ih hlink' hvalid'
 
 -- Path start/end lemmas
 
@@ -105,16 +97,13 @@ lemma pathEnd_append {n : ℕ} (p1 p2 : Path n) (h : p2 ≠ []) :
         simp only [List.append_eq_nil_iff] at heq
         exact h heq.2
       cases htl : (tl ++ p2) with
-      | nil => exact absurd htl hne
+      | nil => contradiction
       | cons a as =>
-        simp only [pathEnd]
-        rw [<- htl]
-        simp [ih]
+        simp [pathEnd, <- htl, ih]
 
 lemma pathEnd_suffix (n : ℕ) (p1 p2 : List (Fin n)) (k : Fin n) :
   pathEnd ([k] ++ p2) = pathEnd (p1 ++ [k] ++ p2) := by
     have h := pathEnd_append p1 ([k] ++ p2) (by simp)
-    simp at h
     simp only [List.append_assoc]
     exact h.symm
 
@@ -123,39 +112,25 @@ lemma pathEnd_append_tail {n : ℕ} (p1 p2 : Path n)
   (hend2 : pathEnd p2 = some j) :
   pathEnd (p1 ++ p2.tail) = pathEnd p2 := by
     cases p2 with
-    | nil =>
-      contradiction
+    | nil => contradiction
     | cons y ys =>
       cases ys with
       | nil =>
-        simp only [List.tail_cons, List.append_nil, pathEnd]
-        simp only [pathStart] at h_link
-        exact h_link
+        simpa [List.tail_cons, List.append_nil, pathEnd]
       | cons z zs =>
-        have hend : pathEnd (y :: z :: zs) = pathEnd (z :: zs) := by
-          simp [pathEnd]
-        simp only [List.tail_cons, hend]
         exact pathEnd_append p1 (z :: zs) (by simp)
 
 -- Path weight lemmas
-
-lemma pathWeight_split (G : Graph n) (v : Fin n) (vs : List (Fin n))
-  (h : vs ≠ []) : pathWeight G (v :: vs) = G.w v (vs.head h) + pathWeight G vs := by
-    cases vs with
-    | nil => contradiction
-    | cons u rest => simp [pathWeight]
 
 lemma pathWeight_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
   (hvalid1 : validPath G p1) (hlink : pathEnd p1 = pathStart p2) :
   pathWeight G (p1 ++ p2.tail) = pathWeight G p1 + pathWeight G p2 := by
     induction p1 with
-    | nil =>
-      contradiction
+    | nil => contradiction
     | cons x xs ih =>
       cases xs with
       | nil =>
-        rw [rebuild_path x hlink]
-        simp
+        simp [<- rebuild_path x hlink]
       | cons y ys =>
         simp only [List.cons_append] at *
         have hvalid :validPath G (y :: ys) := by
@@ -170,36 +145,34 @@ lemma isPathFromTo_prefix {n : ℕ} (G : Graph n)
   (p1 p2 : List (Fin n)) (i j k : Fin n)
   (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
   isPathFromTo G (p1 ++ [k]) i k := by
-  rcases h with ⟨h_valid, h_start, h_end⟩
-  have h_valid_prefix : validPath G (p1 ++ [k]) := by
-    exact validPath_prefix G p1 p2 k h_valid
-  have h_start_prefix : pathStart (p1 ++ [k]) = some i := by
-    rw [<- h_start]
-    exact pathStart_prefix p1 p2 k
-  have h_end_prefix : pathEnd (p1 ++ [k]) = some k := by
-    exact pathEnd_append p1 ([k] ++ []) (by simp)
-  exact ⟨h_valid_prefix, h_start_prefix, h_end_prefix⟩
+    rcases h with ⟨hvalid, hstart, hend⟩
+    have hvalid_prefix : validPath G (p1 ++ [k]) := by
+      exact validPath_prefix G p1 p2 k hvalid
+    have hstart_prefix : pathStart (p1 ++ [k]) = some i := by
+      simp [<- hstart, pathStart_prefix p1 p2 k]
+    have hend_prefix : pathEnd (p1 ++ [k]) = some k := by
+      exact pathEnd_append p1 ([k] ++ []) (by simp)
+    exact ⟨hvalid_prefix, hstart_prefix, hend_prefix⟩
 
 lemma isPathFromTo_suffix {n} (G : Graph n)
   (p1 p2 : List (Fin n)) (i j k : Fin n)
   (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
   isPathFromTo G ([k] ++ p2) k j := by
-  rcases h with ⟨hpath, hstart, hend⟩
-  have hpath_p2 : validPath G ([k] ++ p2) := by
-    exact validPath_suffix G p1 p2 k hpath
-  have hj : pathEnd ([k] ++ p2) = j := by
-    rw [<- hend]
-    exact pathEnd_suffix n p1 p2 k
-  have hk : pathStart ([k] ++ p2) = k := by
-    simp [pathStart]
-  exact ⟨hpath_p2, hk, hj⟩
+    rcases h with ⟨hvalid, hstart, hend⟩
+    have hvalid_suffix : validPath G ([k] ++ p2) := by
+      exact validPath_suffix G p1 p2 k hvalid
+    have hstart_suffix : pathStart ([k] ++ p2) = k := by
+      simp [pathStart]
+    have hend_suffix : pathEnd ([k] ++ p2) = j := by
+      simp only [<- hend, pathEnd_suffix n p1 p2 k]
+    exact ⟨hvalid_suffix, hstart_suffix, hend_suffix⟩
 
 lemma isPathFromTo_split {n : ℕ} (G : Graph n)
   (p1 p2 : List (Fin n)) (i j k : Fin n)
   (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
   isPathFromTo G (p1 ++ [k]) i k ∧ isPathFromTo G ([k] ++ p2) k j := by
-  constructor
-  · exact isPathFromTo_prefix G p1 p2 i j k h
-  · exact isPathFromTo_suffix G p1 p2 i j k h
+    constructor
+    · exact isPathFromTo_prefix G p1 p2 i j k h
+    · exact isPathFromTo_suffix G p1 p2 i j k h
 
 end FYP
