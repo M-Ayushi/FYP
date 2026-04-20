@@ -193,51 +193,47 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
       let p2 := p.drop (p1.length + 1)
       have hp_split : p = p1 ++ [k] ++ p2 :=
         takeWhile_drop_split k p h
-      have hp_path' : isPathFromTo G (p1 ++ [k] ++ p2) i j := by
-        simpa [hp_split] using hp_path
+      have split :=
+        isPathFromTo_split G p1 p2 i j k
+          (by simpa [hp_split] using hp_path)
+      have hp_verts_p1 : ∀ v ∈ p1 ++ [k], v ∈ ks ∨ v = i ∨ v = k := by
+        intros v hv;
+        simp only [List.mem_cons] at hp_verts
+        have hv_p : v ∈ p := by
+          have : v ∈ p1 ++ [k] ++ p2 := by
+            apply List.mem_append.mpr
+            exact Or.inl hv
+          simpa [hp_split] using this
+        specialize hp_verts v hv_p
+        cases hp_verts with
+        | inl hk => exact Or.inr (Or.inr hk)
+        | inr hks => exact Or.inl hks
       have h1 : distUpToList G ks i k ≤ pathWeight G (p1 ++ [k]) :=
         distUpToList_le_of_path G ks i k (p1 ++ [k])
-          (isPathFromTo_prefix G p1 p2 i j k hp_path')
-          (by
-            -- all vertices in ks ∪ {i,k}
-            intros v hv;
-            simp only [List.mem_cons] at hp_verts
-            have hv_p : v ∈ p := by
-              have : v ∈ p1 ++ [k] ++ p2 := by
-                apply List.mem_append.mpr
-                exact Or.inl hv
-              simpa [hp_split] using this
-            specialize hp_verts v hv_p
-            cases hp_verts with
-            | inl hk => exact Or.inr (Or.inr hk)
-            | inr hks => exact Or.inl hks
-            )
+          (split.1) (hp_verts_p1)
+      have hp_verts_p2 : ∀ v ∈ ([k] ++ p2), v ∈ ks ∨ v = k ∨ v = j := by
+        intros v hv
+        have hv_p : v ∈ p := by
+          have : v ∈ p1 ++ [k] ++ p2 := by
+            apply List.mem_append.mpr
+            simp only [List.cons_append, List.mem_cons] at hv
+            cases hv with
+            | inl hk =>
+              subst hk
+              left
+              simp
+            | inr hv_p2 =>
+              right
+              exact hv_p2
+          simpa [hp_split] using this
+        specialize hp_verts v hv_p
+        simp only [List.mem_cons] at hp_verts
+        cases hp_verts with
+        | inl hk => exact Or.inr (Or.inl hk)
+        | inr hks => exact Or.inl hks
       have h2 : distUpToList G ks k j ≤ pathWeight G ([k] ++ p2) := by
-        have hp_k_j : isPathFromTo G ([k] ++ p2) k j := by
-          -- suffix of a path starting at k
-          exact isPathFromTo_suffix G p1 p2 i j k hp_path'
-        have hp_verts_p2 : ∀ v ∈ ([k] ++ p2), v ∈ ks ∨ v = k ∨ v = j := by
-          intros v hv
-          have hv_p : v ∈ p := by
-            have : v ∈ p1 ++ [k] ++ p2 := by
-              apply List.mem_append.mpr
-              simp only [List.cons_append, List.nil_append,
-                        List.mem_cons, p2] at hv
-              cases hv with
-              | inl hk =>
-                subst hk
-                left
-                simp
-              | inr hv_p2 =>
-                right
-                simp [p2, hv_p2]
-            simpa [hp_split] using this
-          specialize hp_verts v hv_p
-          simp only [List.mem_cons] at hp_verts
-          cases hp_verts with
-          | inl hk => exact Or.inr (Or.inl hk)
-          | inr hks => exact Or.inl hks
-        exact distUpToList_le_of_path G ks k j ([k] ++ p2) hp_k_j hp_verts_p2
+        exact distUpToList_le_of_path G ks k j ([k] ++ p2)
+          (split.2) hp_verts_p2
       have hp_sum :
         pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
           simp only [hp_split, List.append_assoc, List.cons_append, List.nil_append]

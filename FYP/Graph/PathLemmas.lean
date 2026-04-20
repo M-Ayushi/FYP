@@ -89,10 +89,8 @@ lemma validPath_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
 lemma pathStart_prefix {n : ℕ} (p1 p2 : List (Fin n)) (k : Fin n) :
   pathStart (p1 ++ [k]) = pathStart (p1 ++ [k] ++ p2) := by
     cases p1 with
-    | nil =>
-      simp [pathStart]
-    | cons hd tl =>
-      simp [pathStart]
+    | nil => simp [pathStart]
+    | cons hd tl => simp [pathStart]
 
 lemma pathStart_append_tail {n : ℕ} (p1 p2 : Path n) (i : Fin n)
   (hstart1 : pathStart p1 = some i) :
@@ -131,7 +129,7 @@ lemma pathEnd_suffix (n : ℕ) (p1 p2 : List (Fin n)) (k : Fin n) :
   pathEnd ([k] ++ p2) = pathEnd (p1 ++ [k] ++ p2) := by
     have h := pathEnd_append p1 ([k] ++ p2) (by simp)
     simp at h
-    simp only [List.cons_append, List.nil_append, List.append_assoc]
+    simp only [List.append_assoc]
     exact h.symm
 
 lemma pathEnd_append_tail {n : ℕ} (p1 p2 : Path n)
@@ -148,9 +146,9 @@ lemma pathEnd_append_tail {n : ℕ} (p1 p2 : Path n)
         simp only [pathStart] at h_link
         exact h_link
       | cons z zs =>
-        have h1 : pathEnd (y :: z :: zs) = pathEnd (z :: zs) := by
+        have hend : pathEnd (y :: z :: zs) = pathEnd (z :: zs) := by
           simp [pathEnd]
-        simp only [List.tail_cons, h1]
+        simp only [List.tail_cons, hend]
         exact pathEnd_append p1 (z :: zs) (by simp)
 
 -- Path weight lemmas
@@ -207,10 +205,7 @@ lemma pathWeight_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
     | cons x xs ih =>
       cases xs with
       | nil =>
-        simp only [pathWeight]
-        have rebuild_p2 : p2 = [x] ++ p2.tail := by
-          exact rebuild_path x hlink
-        rw [rebuild_p2]
+        rw [rebuild_path x hlink]
         simp
       | cons y ys =>
         simp only [List.cons_append] at *
@@ -218,8 +213,7 @@ lemma pathWeight_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
           exact validPath_suffix G [x] ys y hvalid1
         have hlink' : pathEnd (y :: ys) = pathStart p2 := by
           simpa [pathEnd] using hlink
-        have := ih hvalid hlink'
-        simp [this, add_assoc]
+        simp [ih hvalid hlink', add_assoc]
 
 lemma pathWeight_append {n} (G : Graph n) (k : Fin n)
   (p q : List (Fin n)) :
@@ -265,5 +259,14 @@ lemma isPathFromTo_suffix {n} (G : Graph n)
   have hk : pathStart ([k] ++ p2) = k := by
     simp [pathStart]
   exact ⟨hpath_p2, hk, hj⟩
+
+lemma isPathFromTo_split {n : ℕ} (G : Graph n)
+  (p1 p2 : List (Fin n)) (i j k : Fin n)
+  (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
+  isPathFromTo G (p1 ++ [k]) i k ∧ isPathFromTo G ([k] ++ p2) k j := by
+
+  constructor
+  · exact isPathFromTo_prefix G p1 p2 i j k h
+  · exact isPathFromTo_suffix G p1 p2 i j k h
 
 end FYP
