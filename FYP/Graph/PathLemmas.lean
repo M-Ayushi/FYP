@@ -215,21 +215,6 @@ lemma pathWeight_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
           simpa [pathEnd] using hlink
         simp [ih hvalid hlink', add_assoc]
 
-lemma pathWeight_append {n} (G : Graph n) (k : Fin n)
-  (p q : List (Fin n)) :
-  pathWeight G (p ++ [k] ++ q) =
-    pathWeight G (p ++ [k]) + pathWeight G (k :: q) := by
-    induction p with
-    | nil =>
-      simp
-    | cons v vs ih =>
-      cases vs with
-      | nil =>
-        simp
-      | cons u rest =>
-        simp at ih
-        simp [ih, add_assoc]
-
 -- isPathFromTo lemmas
 
 lemma isPathFromTo_prefix {n : ℕ} (G : Graph n)
@@ -264,7 +249,6 @@ lemma isPathFromTo_split {n : ℕ} (G : Graph n)
   (p1 p2 : List (Fin n)) (i j k : Fin n)
   (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
   isPathFromTo G (p1 ++ [k]) i k ∧ isPathFromTo G ([k] ++ p2) k j := by
-
   constructor
   · exact isPathFromTo_prefix G p1 p2 i j k h
   · exact isPathFromTo_suffix G p1 p2 i j k h

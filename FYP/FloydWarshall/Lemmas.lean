@@ -236,11 +236,13 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
           (split.2) hp_verts_p2
       have hp_sum :
         pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
-          simp only [hp_split, List.append_assoc, List.cons_append, List.nil_append]
-          have hlist : p1 ++ k :: p2 = (p1 ++ [k]) ++ p2 := by
-            simp [List.append_assoc, List.cons_append, List.nil_append]
-          rw [hlist]
-          apply pathWeight_append
+          have h_valid : validPath G (p1 ++ [k]) := by
+            simp [isPathFromTo, hp_split] at hp_path
+            exact validPath_prefix G p1 p2 k (by simp [hp_path.left])
+          have h_end : pathEnd (p1 ++ [k]) = pathStart ([k] ++ p2) := by
+            simp [pathEnd_append p1 [k] (by simp), pathStart, pathEnd]
+          rw [<- pathWeight_append_tail G (p1 ++ [k]) ([k] ++ p2) h_valid h_end]
+          simp [hp_split]
       -- transitivity
       have h_total : distUpToList G ks i k + distUpToList G ks k j ≤ pathWeight G p := by
         simp only [hp_sum]
