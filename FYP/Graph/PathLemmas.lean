@@ -22,31 +22,25 @@ lemma validPath_prefix {n : ℕ} (G : Graph n)
   validPath G (p1 ++ [k]) := by
   induction p1 with
   | nil =>
-      simp [validPath]
+    simp [validPath]
   | cons hd tl ih =>
-      simp only [List.cons_append, List.append_assoc,
-                List.nil_append] at h
-      cases tl with
-      | nil =>
-          -- p1 = [hd]
-          simp only [List.nil_append] at h
-          exact ⟨ h.1, trivial⟩
-      | cons v rest =>
-          -- main recursive case
-          simp only [List.cons_append] at h
-          rcases h with ⟨h_edge, h_tail⟩
-          have h_tail' : validPath G (v :: (rest ++ [k] ++ p2)) := by
-            simpa [List.append_assoc] using h_tail
-          have h_mid : validPath G (v :: rest ++ [k]) :=
-            ih h_tail'
-          exact ⟨h_edge, h_mid⟩
+    cases tl with
+    | nil =>
+      exact ⟨ h.1, trivial ⟩
+    | cons v rest =>
+      rcases h with ⟨h_edge, h_tail⟩
+      have h_tail' : validPath G (v :: (rest ++ [k] ++ p2)) := by
+        simpa [List.append_assoc] using h_tail
+      have h_mid : validPath G (v :: rest ++ [k]) :=
+        ih h_tail'
+      exact ⟨ h_edge, h_mid ⟩
 
 lemma validPath_suffix {n : ℕ} (G : Graph n)
   (p1 p2 : List (Fin n)) (k : Fin n) (h : validPath G (p1 ++ [k] ++ p2)) :
   validPath G ([k] ++ p2) := by
   induction p1 with
   | nil =>
-      simpa using h
+    simpa using h
   | cons hd tl ih =>
     have : validPath G (tl ++ [k] ++ p2) := by
       cases tl with
