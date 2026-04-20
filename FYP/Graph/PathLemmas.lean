@@ -96,17 +96,9 @@ lemma pathStart_append_tail {n : ℕ} (p1 p2 : Path n) (i : Fin n)
   (hstart1 : pathStart p1 = some i) :
   pathStart (p1 ++ p2.tail) = pathStart p1 := by
     unfold pathStart
-    have hp1_ne_nil : p1 ≠ [] := by
-      intro h
-      have : pathStart p1 = none := by
-        simp [h, pathStart]
-      rw [hstart1] at this
-      contradiction
     cases p1 with
-    | nil =>
-      contradiction
-    | cons x xs =>
-      simp
+    | nil => contradiction
+    | cons x xs => simp
 
 lemma pathEnd_append {n : ℕ} (p1 p2 : Path n) (h : p2 ≠ []) :
   pathEnd (p1 ++ p2) = pathEnd p2 := by
@@ -159,42 +151,37 @@ lemma pathWeight_split (G : Graph n) (v : Fin n) (vs : List (Fin n))
     | nil => contradiction
     | cons u rest => simp [pathWeight]
 
-lemma pathWeight_concat {n : ℕ} (G : Graph n) :
-  ∀ p q : Path n,
-    pathEnd p = pathStart q →
-      pathWeight G (concatPath p q) =
-        pathWeight G p + pathWeight G q := by
-  intro p q hpq
-  induction p with
-  | nil =>
-    simp [concatPath, pathWeight]
-  | cons v vs ih =>
-    cases vs with
-    | nil =>
-      have expand_q : q = v :: q.tail := by
-        simp only [pathEnd] at hpq
-        exact rebuild_path v hpq
-      rw [expand_q]
-      simp [concatPath, pathWeight, Graph.self_weight]
-    | cons u rest =>
-      simp only [concatPath, pathWeight_cons]
-      have hpq' : pathEnd (u :: rest) = pathStart q := by
-        simpa [pathEnd, concatPath] using hpq
-      have ih' := ih hpq'
-      cases rest with
-      | nil =>
-        have expand_q : q = u :: q.tail := by
-          simp only [pathEnd] at hpq
-          exact rebuild_path u hpq
-        rw [expand_q]
-        simp [concatPath, pathWeight_cons, Graph.self_weight]
-      | cons w ws =>
-        have non_empty : (concatPath (u :: w :: ws) q) ≠ [] := by
-          simp [concatPath]
-        have getHead : ((concatPath (u :: w :: ws) q).head (non_empty)) = u := by
-          simp [concatPath]
-        have := pathWeight_split G v (concatPath (u :: w :: ws) q) (non_empty)
-        simp [this, getHead, ih', add_assoc]
+-- lemma pathWeight_concat {n : ℕ} (G : Graph n) :
+--   ∀ p q : Path n,
+--     pathEnd p = pathStart q →
+--       pathWeight G (concatPath p q) =
+--         pathWeight G p + pathWeight G q := by
+--   intro p q hpq
+--   induction p with
+--   | nil =>
+--     simp [concatPath, pathWeight]
+--   | cons v vs ih =>
+--     cases vs with
+--     | nil =>
+--       simp only [pathEnd] at hpq
+--       rw [rebuild_path v hpq]
+--       simp [concatPath, pathWeight, Graph.self_weight]
+--     | cons u rest =>
+--       simp only [concatPath, pathWeight_cons]
+--       have hpq' : pathEnd (u :: rest) = pathStart q := by
+--         simpa [pathEnd, concatPath] using hpq
+--       have ih' := ih hpq'
+--       cases rest with
+--       | nil =>
+--         rw [rebuild_path u hpq]
+--         simp [concatPath, pathWeight_cons, Graph.self_weight]
+--       | cons w ws =>
+--         have non_empty : (concatPath (u :: w :: ws) q) ≠ [] := by
+--           simp [concatPath]
+--         have getHead : ((concatPath (u :: w :: ws) q).head (non_empty)) = u := by
+--           simp [concatPath]
+--         have := pathWeight_split G v (concatPath (u :: w :: ws) q) (non_empty)
+--         simp [this, getHead, ih', add_assoc]
 
 lemma pathWeight_append_tail {n : ℕ} (G : Graph n) (p1 p2 : Path n)
   (hvalid1 : validPath G p1) (hlink : pathEnd p1 = pathStart p2) :
