@@ -45,20 +45,6 @@ def isPathFromTo {n : ℕ} (G : Graph n) (p : Path n) (i j : Fin n) : Prop :=
 noncomputable def dist {n : ℕ} (G : Graph n) (i j : Fin n) : ℕ∞ :=
   sInf {w | ∃ p, isPathFromTo G p i j ∧ pathWeight G p = w}
 
-def concatPath {n : ℕ} : Path n → Path n → Path n
-  | [], q => q
-  | [u], q => u :: q
-  | (u :: v :: ps), q => u :: concatPath (v :: ps) q
-
-def usesOnlyUpTo {n : ℕ} (k : Fin n) (p : Path n) : Prop :=
-  ∀ v ∈ p, v ≤ k
-
-noncomputable def distUpTo {n : ℕ} (G : Graph n) (k : Fin n) (i j : Fin n) : ℕ∞ :=
-  sInf {w | ∃ p,
-    isPathFromTo G p i j ∧
-    usesOnlyUpTo k p ∧
-    pathWeight G p = w}
-
 noncomputable def distUpToList {n : ℕ} (G : Graph n) (l : List (Fin n)) (i j : Fin n) : ℕ∞ :=
   sInf {w | ∃ p,
     isPathFromTo G p i j ∧

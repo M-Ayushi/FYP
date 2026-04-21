@@ -68,7 +68,7 @@ lemma initDist_le_sInf_neq_by_path_witness {n : ℕ} (G : Graph n) (i j : Fin n)
           have hend' : pathEnd (y :: ys) = some j := by
             simpa [pathEnd] using hend
           have hvalid' : validPath G ([y] ++ ys) := by
-              exact validPath_suffix G [y] ys y hvalid
+              exact validPath_suffix [y] ys y hvalid
           simp only at hvalid'
           have h1 := ih all_x_j hvalid' hstart' hend'
           exact h1
@@ -156,12 +156,20 @@ lemma fwStep_le_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n
       simp [hend1, hstart2]
     refine ⟨p, ?_, ?_, ?_⟩
     · refine ⟨?_, ?_, ?_⟩
-      · exact validPath_append_tail G p1 p2 h_link hvalid1 hvalid2
+      · exact validPath_append_tail p1 p2 h_link hvalid1 hvalid2
       · have pathStart_eq : pathStart p = pathStart p1 := by
-          exact pathStart_append_tail p1 p2 i hstart1
+          have hnonempty1 : p1 ≠ [] := by
+            intro h
+            rw [h] at hstart1
+            contradiction
+          exact pathStart_append_tail p1 p2 hnonempty1
         simp [hstart1, pathStart_eq]
       · have pathEnd_eq : pathEnd p = pathEnd p2 := by
-          exact pathEnd_append_tail p1 p2 j h_link hend2
+          have hnonempty2 : p2 ≠ [] := by
+            intro h
+            rw [h] at hstart2
+            contradiction
+          exact pathEnd_append_tail p1 p2 h_link hnonempty2
         simp [hend2, pathEnd_eq]
     · intro v hv
       unfold p at hv
@@ -177,7 +185,7 @@ lemma fwStep_le_split {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fin n
     · simp only [distUpToList] at hp1_w hp2_w
       rw [<- hp1_w, <- hp2_w]
       unfold p
-      rw [pathWeight_append_tail G p1 p2 hvalid1 h_link]
+      rw [pathWeight_append_tail p1 p2 hvalid1 h_link]
 
 -- any path from i to j that can use k is at least as long as the
 -- shorter of the path that doesn't use k and the path that goes via k
@@ -238,10 +246,10 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
         pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
           have h_valid : validPath G (p1 ++ [k]) := by
             simp [isPathFromTo, hp_split] at hp_path
-            exact validPath_prefix G p1 p2 k (by simp [hp_path.left])
+            exact validPath_prefix p1 p2 k (by simp [hp_path.left])
           have h_end : pathEnd (p1 ++ [k]) = pathStart ([k] ++ p2) := by
             simp [pathEnd_append p1 [k] (by simp), pathStart, pathEnd]
-          rw [<- pathWeight_append_tail G (p1 ++ [k]) ([k] ++ p2) h_valid h_end]
+          rw [<- pathWeight_append_tail (p1 ++ [k]) ([k] ++ p2) h_valid h_end]
           simp [hp_split]
       -- transitivity
       have h_total : distUpToList G ks i k + distUpToList G ks k j ≤ pathWeight G p := by
