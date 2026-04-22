@@ -201,9 +201,9 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
       let p2 := p.drop (p1.length + 1)
       have hp_split : p = p1 ++ [k] ++ p2 :=
         takeWhile_drop_split k p h
-      have split :=
-        isPathFromTo_split G p1 p2 i j k
-          (by simpa [hp_split] using hp_path)
+      simp only [hp_split] at hp_path
+      have split_prefix := isPathFromTo_prefix p1 p2 i j k hp_path
+      have split_suffix := isPathFromTo_suffix p1 p2 i j k hp_path
       have hp_verts_p1 : ∀ v ∈ p1 ++ [k], v ∈ ks ∨ v = i ∨ v = k := by
         intros v hv;
         simp only [List.mem_cons] at hp_verts
@@ -218,7 +218,7 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
         | inr hks => exact Or.inl hks
       have h1 : distUpToList G ks i k ≤ pathWeight G (p1 ++ [k]) :=
         distUpToList_le_of_path G ks i k (p1 ++ [k])
-          (split.1) (hp_verts_p1)
+          (split_prefix) (hp_verts_p1)
       have hp_verts_p2 : ∀ v ∈ ([k] ++ p2), v ∈ ks ∨ v = k ∨ v = j := by
         intros v hv
         have hv_p : v ∈ p := by
@@ -241,11 +241,11 @@ lemma min_le_list_with_k {n : ℕ} (G : Graph n) (ks : List (Fin n)) (k i j : Fi
         | inr hks => exact Or.inl hks
       have h2 : distUpToList G ks k j ≤ pathWeight G ([k] ++ p2) := by
         exact distUpToList_le_of_path G ks k j ([k] ++ p2)
-          (split.2) hp_verts_p2
+          (split_suffix) hp_verts_p2
       have hp_sum :
         pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
           have h_valid : validPath G (p1 ++ [k]) := by
-            simp [isPathFromTo, hp_split] at hp_path
+            simp [isPathFromTo] at hp_path
             exact validPath_prefix p1 p2 k (by simp [hp_path.left])
           have h_end : pathEnd (p1 ++ [k]) = pathStart ([k] ++ p2) := by
             simp [pathEnd_append p1 [k] (by simp), pathStart, pathEnd]

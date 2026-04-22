@@ -3,7 +3,7 @@ import FYP.Graph.Basic
 namespace FYP
 
 -- Floyd-Warshall Algorithm: Computes shortest paths between all pairs of vertices.
--- Returns a function dist : (i j : Fin n) → Weight that represents the shortest distance.
+-- Returns a function shortestDist : (i j : Fin n) → Weight that represents the shortest distance.
 
 def initDist {n} (G : Graph n) : Fin n → Fin n → ℕ∞ :=
   fun i j => if i = j then 0 else G.w i j

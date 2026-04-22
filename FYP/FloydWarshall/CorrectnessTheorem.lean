@@ -25,15 +25,15 @@ lemma fw_invariant {n : ℕ} (G : Graph n) :
     simp [distUpToList, or_comm]
 
 theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :
-  floydWarshall G i j = dist G i j := by
+  floydWarshall G i j = shortestDist G i j := by
   simp only [floydWarshall]
   rw [fw_invariant G (List.finRange n) i j]
-  -- show that distUpToList G (List.finRange n) i j = dist G i j
+  -- show that distUpToList G (List.finRange n) i j = shortestDist G i j
   -- follows from the fact that distUpToList G (List.finRange n) i j
-  -- is the infimum over all paths from i to j, which is exactly dist G i j
-  simp only [dist, distUpToList]
+  -- is the infimum over all paths from i to j, which is exactly shortestDist G i j
+  simp only [shortestDist, distUpToList]
   apply le_antisymm
-  · -- show distUpToList G (List.finRange n) i j ≤ dist G i j
+  · -- show distUpToList G (List.finRange n) i j ≤ shortestDist G i j
     apply le_sInf
     intro w hw
     rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
@@ -42,7 +42,7 @@ theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :
     -- show that p only uses vertices in List.finRange n
     -- true since List.finRange n contains all vertices
     simp [List.mem_finRange, true_or]
-  · -- show dist G i j ≤ distUpToList G (List.finRange n) i j
+  · -- show shortestDist G i j ≤ distUpToList G (List.finRange n) i j
     simp
 
 end FYP

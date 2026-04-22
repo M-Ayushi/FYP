@@ -88,12 +88,9 @@ lemma pathEnd_append (p1 p2 : Path n) (h : p2 ≠ []) :
     | nil => simp
     | cons hd tl ih =>
       simp only [List.cons_append]
-      have hne : tl ++ p2 ≠ [] := by
-        intro heq
-        simp only [List.append_eq_nil_iff] at heq
-        exact h heq.2
       cases htl : (tl ++ p2) with
-      | nil => contradiction
+      | nil =>
+        simp [h] at htl
       | cons a as =>
         simp [pathEnd, <- htl, ih]
 
@@ -139,32 +136,25 @@ lemma pathWeight_append_tail (p1 p2 : Path n)
 lemma isPathFromTo_prefix (p1 p2 : List (Fin n))
   (i j k : Fin n) (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
   isPathFromTo G (p1 ++ [k]) i k := by
-    rcases h with ⟨hvalid, hstart, hend⟩
+    rcases h with ⟨ hvalid, hstart, hend ⟩
     have hvalid_prefix : validPath G (p1 ++ [k]) := by
       exact validPath_prefix p1 p2 k hvalid
     have hstart_prefix : pathStart (p1 ++ [k]) = some i := by
       simp [<- hstart, pathStart_prefix p1 p2 k]
     have hend_prefix : pathEnd (p1 ++ [k]) = some k := by
       exact pathEnd_append p1 ([k] ++ []) (by simp)
-    exact ⟨hvalid_prefix, hstart_prefix, hend_prefix⟩
+    exact ⟨ hvalid_prefix, hstart_prefix, hend_prefix ⟩
 
 lemma isPathFromTo_suffix (p1 p2 : List (Fin n))
   (i j k : Fin n) (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
   isPathFromTo G ([k] ++ p2) k j := by
-    rcases h with ⟨hvalid, hstart, hend⟩
+    rcases h with ⟨ hvalid, hstart, hend ⟩
     have hvalid_suffix : validPath G ([k] ++ p2) := by
       exact validPath_suffix p1 p2 k hvalid
     have hstart_suffix : pathStart ([k] ++ p2) = k := by
       simp [pathStart]
     have hend_suffix : pathEnd ([k] ++ p2) = j := by
       simp only [<- hend, pathEnd_suffix p1 p2 k]
-    exact ⟨hvalid_suffix, hstart_suffix, hend_suffix⟩
-
-lemma isPathFromTo_split {n} (G) (p1 p2 : List (Fin n))
-  (i j k : Fin n) (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
-  isPathFromTo G (p1 ++ [k]) i k ∧ isPathFromTo G ([k] ++ p2) k j := by
-    constructor
-    · exact isPathFromTo_prefix p1 p2 i j k h
-    · exact isPathFromTo_suffix p1 p2 i j k h
+    exact ⟨ hvalid_suffix, hstart_suffix, hend_suffix ⟩
 
 end FYP

@@ -42,7 +42,7 @@ def isPathFromTo {n : ℕ} (G : Graph n) (p : Path n) (i j : Fin n) : Prop :=
   pathEnd p = some j
 
 -- defines distance as the minimum weight over all paths from i to j
-noncomputable def dist {n : ℕ} (G : Graph n) (i j : Fin n) : ℕ∞ :=
+noncomputable def shortestDist {n : ℕ} (G : Graph n) (i j : Fin n) : ℕ∞ :=
   sInf {w | ∃ p, isPathFromTo G p i j ∧ pathWeight G p = w}
 
 noncomputable def distUpToList {n : ℕ} (G : Graph n) (l : List (Fin n)) (i j : Fin n) : ℕ∞ :=
