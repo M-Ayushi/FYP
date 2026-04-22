@@ -6,7 +6,7 @@ import FYP.FloydWarshall.Lemmas
 
 namespace FYP
 
-lemma fw_invariant {n : ℕ} (G : Graph n) :
+lemma fw_invariant :
   ∀ (l : List (Fin n)) (i j : Fin n),
     (l.foldl fwStep (initDist G)) i j = distUpToList G l i j := by
   intro l
@@ -21,28 +21,24 @@ lemma fw_invariant {n : ℕ} (G : Graph n) :
       funext (fun i => funext (fun j => ih i j))
     rw [hfun]
     simp only [fwStep]
-    rw [fwStep_invariant G ks k i j]
+    rw [fwStep_invariant ks k i j]
     simp [distUpToList, or_comm]
 
 theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :
   floydWarshall G i j = shortestDist G i j := by
   simp only [floydWarshall]
-  rw [fw_invariant G (List.finRange n) i j]
-  -- show that distUpToList G (List.finRange n) i j = shortestDist G i j
-  -- follows from the fact that distUpToList G (List.finRange n) i j
-  -- is the infimum over all paths from i to j, which is exactly shortestDist G i j
+  rw [fw_invariant (List.finRange n) i j]
+  -- distUpToList G (List.finRange n) i j = shortestDist G i j
   simp only [shortestDist, distUpToList]
   apply le_antisymm
-  · -- show distUpToList G (List.finRange n) i j ≤ shortestDist G i j
+  · -- distUpToList G (List.finRange n) i j ≤ shortestDist G i j
     apply le_sInf
     intro w hw
     rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
     apply sInf_le
     refine ⟨p, hp_path, ?_, rfl⟩
-    -- show that p only uses vertices in List.finRange n
-    -- true since List.finRange n contains all vertices
     simp [List.mem_finRange, true_or]
-  · -- show shortestDist G i j ≤ distUpToList G (List.finRange n) i j
+  · -- shortestDist G i j ≤ distUpToList G (List.finRange n) i j
     simp
 
 end FYP
