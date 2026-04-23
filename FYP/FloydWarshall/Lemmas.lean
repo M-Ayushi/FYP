@@ -48,18 +48,14 @@ lemma fwStep_le_split (ks : List (Fin n)) (k i j : Fin n) :
       unfold p at hv
       cases List.mem_append.mp hv with
       | inl hv1 =>
-          have h := hp1_verts v hv1
-          simp[h]
+          simp [hp1_verts v hv1]
       | inr hv2 =>
           have hv2' : v ∈ p2 := List.mem_of_mem_tail hv2
-          have h := hp2_verts v hv2'
-          simp [h]
+          simp [hp2_verts v hv2']
     · simp only [distUpToList] at hp1_w hp2_w
-      rw [<- hp1_w, <- hp2_w]
-      unfold p
-      rw [pathWeight_append_tail p1 p2 hvalid1 h_link]
+      rw [<- hp1_w, <- hp2_w, pathWeight_append_tail p1 p2 hvalid1 h_link]
 
-lemma fwStep_lower_bound_p1 (ks : List (Fin n)) (k i j : Fin n)
+lemma fwStep_lower_bound_with_k (ks : List (Fin n)) (k i j : Fin n)
   (p : Path n) (hp_path : isPathFromTo G p i j)
   (hp_verts : ∀ v ∈ p, v ∈ k :: ks)
   (hp_weight : pathWeight G p = distUpToList G (k :: ks) i j)
@@ -97,8 +93,7 @@ lemma fwStep_lower_bound_p1 (ks : List (Fin n)) (k i j : Fin n)
           simp only [List.cons_append, List.mem_cons] at hv
           cases hv with
           | inl hk =>
-            subst hk
-            simp
+            simp [hk]
           | inr hv_p2 =>
             right
             exact hv_p2
@@ -128,7 +123,7 @@ lemma fwStep_lower_bound_p1 (ks : List (Fin n)) (k i j : Fin n)
       distUpToList G ks i k + distUpToList G ks k j
         ≤ distUpToList G (k :: ks) i j := by
       simpa [hp_weight] using h_total
-    exact le_trans (min_le_right _ _) h_right
+    exact inf_le_of_right_le h_right
 
 -- any path from i to j that can use k is at least as long as the
 -- shorter of the path that doesn't use k and the path that goes via k
@@ -140,7 +135,7 @@ lemma fwStep_lower_bound (ks : List (Fin n)) (k i j : Fin n) :
     by_cases h : k ∈ p
     · -- path from i to j that uses k can be split into
       -- a path from i to k and a path from k to j
-      exact fwStep_lower_bound_p1 ks k i j p hp_path hp_verts hp_weight h
+      exact fwStep_lower_bound_with_k ks k i j p hp_path hp_verts hp_weight h
     · -- case 2: p doesn't use k
       -- any path from i to j that doesn't use k is still a valid path
       -- when we add k to the list of intermediate vertices
