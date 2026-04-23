@@ -3,134 +3,9 @@ import FYP.Graph.Path
 import FYP.Graph.PathLemmas
 import FYP.FloydWarshall.Definitions
 import FYP.FloydWarshall.HelperLemmas
+import FYP.FloydWarshall.DistanceLemmas
 
 namespace FYP
-
-lemma initDist_eq_sInf_diag (j : Fin n) :
- initDist G j j = sInf {w | ∃ p,
-            isPathFromTo G p j j ∧
-            (∀ v ∈ p, v = j) ∧
-            pathWeight G p = w} := by
-  apply le_antisymm
-  · -- initDist G j j ≤ sInf ...
-    simp [initDist]  -- initDist G j j = 0
-  · -- sInf ... ≤ initDist G j j
-    apply sInf_le
-    refine ⟨[j], ⟨?_, ?_, ?_⟩⟩
-    · simp [isPathFromTo, validPath, pathStart, pathEnd]
-    · intro v hv
-      rw [List.mem_singleton] at hv
-      rw [hv]
-    · simp [initDist]
-
-lemma initDist_le_sInf_neq (i j : Fin n) (h : i ≠ j) :
-  initDist G i j ≤
-    sInf {w | ∃ p, isPathFromTo G p i j ∧
-            (∀ v ∈ p, v = i ∨ v = j) ∧ pathWeight G p = w} := by
-  simp only [initDist, h, ↓reduceIte]
-  apply le_sInf
-  intro w hw
-  rcases hw with ⟨p, hp_path, hp_verts⟩
-  rcases hp_verts with ⟨hverts, rfl⟩
-  rcases hp_path with ⟨hvalid, hstart, hend⟩
-  induction p with
-  | nil =>
-    contradiction
-  | cons x xs =>
-    cases xs with
-    | nil =>
-        simp only [pathStart, pathEnd] at hstart hend
-        cases hstart
-        cases hend
-        exact (h rfl).elim
-    | cons y ys =>
-      have hx : x = i := by
-        simp only [pathStart, Option.some.injEq] at hstart
-        exact hstart
-      subst hx
-      have hy := hverts y (by simp)
-      cases hy with
-      | inl hy_i =>
-          rename_i ih
-          simp only [pathWeight, ge_iff_le]
-          rw [<- hy_i] at hvalid hstart hend hverts ih
-          rw [<- hy_i]
-          have self_weight : G.w y y = 0 := by
-            exact G.self_weight y
-          simp only [self_weight, zero_add, ge_iff_le]
-          have all_x_j : (∀ v ∈ y :: ys, v = y ∨ v = j) := by
-            simp only [List.mem_cons, or_self_left] at hverts
-            simp only [List.mem_cons]
-            exact hverts
-          have hstart' : pathStart (y :: ys) = some y := by
-            simp [pathStart]
-          have hend' : pathEnd (y :: ys) = some j := by
-            simpa [pathEnd] using hend
-          have hvalid' : validPath G ([y] ++ ys) := by
-              exact validPath_suffix [y] ys y hvalid
-          simp only at hvalid'
-          have h1 := ih all_x_j hvalid' hstart' hend'
-          exact h1
-      | inr hy_j =>
-          simp only [pathWeight, ge_iff_le]
-          rw [<- hy_j]
-          simp
-
-lemma initDist_eq_sInf_offdiag (i j : Fin n) (h : i ≠ j) :
-  initDist G i j = sInf {w | ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v = i ∨ v = j)
-                     ∧ pathWeight G p = w} := by
-  apply le_antisymm
-  · exact initDist_le_sInf_neq i j h
-  · apply sInf_le
-    refine ⟨[i, j], ⟨?path_valid, ?path_start, ?path_end⟩, ?verts⟩
-    · simp [validPath]
-      simp [path_valid G i j h]
-    · simp [pathStart]
-    · simp [pathEnd]
-    · constructor
-      · exact mem_pair_iff i j
-      · simp [initDist, h, ↓reduceIte]
-
--- Initial distance function is the same as the shortest distance
--- considering only paths that use vertices in the empty list
--- This is the base case for the induction in fw_invariant
-lemma initDist_eq_sInf (i j : Fin n) :
-  initDist G i j = distUpToList G [] i j := by
-  simp only [distUpToList, List.not_mem_nil, false_or]
-  by_cases h : i = j
-  · simp only [h, or_self]
-    exact initDist_eq_sInf_diag j
-  · exact initDist_eq_sInf_offdiag i j h
-
-lemma distUpToList_le_of_path (ks : List (Fin n)) (i j : Fin n)
-  (p : Path n) (hp_path : isPathFromTo G p i j)
-  (hp_verts : ∀ v ∈ p, v ∈ ks ∨ v = i ∨ v = j) :
-  distUpToList G ks i j ≤ pathWeight G p := by
-    unfold distUpToList
-    apply sInf_le
-    exact ⟨p, hp_path, hp_verts, rfl⟩
-
--- adding a vertex to the list of intermediate vertices is a monotone operation
--- i.e. it can only decrease distances
-lemma distUpToList_mono (ks1 ks2 : List (Fin n))
-  (h : ∀ v, v ∈ ks1 → v ∈ ks2) :
-  ∀ i j , distUpToList G ks2 i j ≤ distUpToList G ks1 i j := by
-  intro i j
-  apply le_sInf
-  intro w hw
-  rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
-  rw [<- hp_weight]
-  have hp_vertices_ks2 : ∀ v ∈ p, v ∈ ks2 ∨ v = i ∨ v = j := by
-      exact fun v a ↦ Or.imp_left (h v) (hp_vertices v a)
-  exact distUpToList_le_of_path ks2 i j p hp_path hp_vertices_ks2
-
--- normally an infimum is not guaranteed to be attained, but in this case
--- we are restricted to only positive integer weights so the infimum is actually a minimum
-lemma exists_path_weight_eq_distUpToList (ks : List (Fin n)) (i j : Fin n) :
-  ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v ∈ ks) -- ∨ v = i ∨ v = j)
-      ∧ pathWeight G p = distUpToList G ks i j := by
-    unfold distUpToList
-    sorry
 
 -- any path from i to j that can use k is less than
 -- or equal to the path that goes via k
@@ -292,20 +167,15 @@ lemma fwStep_invariant (ks : List (Fin n)) (k i j : Fin n) :
     = distUpToList G (k :: ks) i j := by
   apply le_antisymm
   · -- lower bound: show min ... ≤ distUpToList G (k :: ks) i j
-    -- i.e. any path from i to j that can use k is at least as long as the shorter of
-    -- the path that doesn't use k and the path that goes via k
     exact fwStep_lower_bound ks k i j
   · -- upper bound: show distUpToList G (k :: ks) i j ≤ min ...
     apply le_min
-    · -- show distUpToList G (k :: ks) i j ≤ distUpToList G ks i j
-      -- i.e. paths that can use k can only be shorter than paths that can't use k
+    · -- distUpToList G (k :: ks) i j ≤ distUpToList G ks i j
       have subsetofList : ∀ v, v ∈ ks → v ∈ k :: ks := by
         intro v hv
         exact List.mem_cons_of_mem k hv
       exact distUpToList_mono ks (k :: ks) subsetofList i j
-    · -- show distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j
-      -- i.e. any path from i to j that can use k can be split into
-      -- a path from i to k and a path from k to j
+    · -- distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j
       exact fwStep_le_split ks k i j
 
 end FYP

@@ -19,9 +19,7 @@ lemma fw_invariant :
     have hfun: (List.foldl fwStep (initDist G) ks) =
         (fun i j => distUpToList G ks i j) :=
       funext (fun i => funext (fun j => ih i j))
-    rw [hfun]
-    simp only [fwStep]
-    rw [fwStep_invariant ks k i j]
+    simp [hfun, fwStep, fwStep_invariant ks k i j]
     simp [distUpToList, or_comm]
 
 theorem floydWarshall_correct (G : Graph n) (i j : Fin n) :
