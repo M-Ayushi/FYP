@@ -56,10 +56,8 @@ lemma fwStep_le_split (ks : List (Fin n)) (k i j : Fin n) :
       rw [<- hp1_w, <- hp2_w, pathWeight_append_tail p1 p2 hvalid1 h_link]
 
 lemma fwStep_lower_bound_with_k (ks : List (Fin n)) (k i j : Fin n)
-  (p : Path n) (hp_path : isPathFromTo G p i j)
-  (hp_verts : ∀ v ∈ p, v ∈ k :: ks)
-  (hp_weight : pathWeight G p = distUpToList G (k :: ks) i j)
-  (h : k ∈ p) :
+  (p : Path n) (hp_path : isPathFromTo G p i j) (hp_verts : ∀ v ∈ p, v ∈ k :: ks)
+  (hp_weight : pathWeight G p = distUpToList G (k :: ks) i j) (h : k ∈ p) :
   min (distUpToList G ks i j)
     (distUpToList G ks i k + distUpToList G ks k j) ≤
       distUpToList G (k :: ks) i j := by
@@ -68,15 +66,14 @@ lemma fwStep_lower_bound_with_k (ks : List (Fin n)) (k i j : Fin n)
     have hp_split : p = p1 ++ [k] ++ p2 :=
       takeWhile_drop_split k p h
     simp only [hp_split] at hp_path
+    simp only [List.mem_cons] at hp_verts
     have split_prefix := isPathFromTo_prefix p1 p2 i j k hp_path
     have split_suffix := isPathFromTo_suffix p1 p2 i j k hp_path
     have hp_verts_p1 : ∀ v ∈ p1 ++ [k], v ∈ ks ∨ v = i ∨ v = k := by
       intros v hv;
-      simp only [List.mem_cons] at hp_verts
       have hv_p : v ∈ p := by
-        have : v ∈ p1 ++ [k] ++ p2 := by
-          apply List.mem_append.mpr
-          exact Or.inl hv
+        have : v ∈ (p1 ++ [k]) ++ p2 := by
+          exact List.mem_append_left p2 hv
         simpa [hp_split] using this
       specialize hp_verts v hv_p
       cases hp_verts with
@@ -88,18 +85,10 @@ lemma fwStep_lower_bound_with_k (ks : List (Fin n)) (k i j : Fin n)
     have hp_verts_p2 : ∀ v ∈ ([k] ++ p2), v ∈ ks ∨ v = k ∨ v = j := by
       intros v hv
       have hv_p : v ∈ p := by
-        have : v ∈ p1 ++ [k] ++ p2 := by
-          apply List.mem_append.mpr
-          simp only [List.cons_append, List.mem_cons] at hv
-          cases hv with
-          | inl hk =>
-            simp [hk]
-          | inr hv_p2 =>
-            right
-            exact hv_p2
+        have : v ∈ p1 ++ ([k] ++ p2) := by
+          exact List.mem_append_right p1 hv
         simpa [hp_split] using this
       specialize hp_verts v hv_p
-      simp only [List.mem_cons] at hp_verts
       cases hp_verts with
       | inl hk => exact Or.inr (Or.inl hk)
       | inr hks => exact Or.inl hks
@@ -125,6 +114,28 @@ lemma fwStep_lower_bound_with_k (ks : List (Fin n)) (k i j : Fin n)
       simpa [hp_weight] using h_total
     exact inf_le_of_right_le h_right
 
+lemma fwStep_lower_bound_without_k (ks : List (Fin n)) (k i j : Fin n) (p : Path n)
+  (hp_path : isPathFromTo G p i j) (hp_verts : ∀ v ∈ p, v ∈ k :: ks)
+  (hp_weight : pathWeight G p = distUpToList G (k :: ks) i j) (h : k ∉ p) :
+  min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j)
+  ≤ distUpToList G (k :: ks) i j := by
+    have hp_verts_ks : ∀ v ∈ p, v ∈ ks ∨ v = i ∨ v = j := by
+      intro v hv
+      have hmem := hp_verts v hv
+      have hv_ne_k : v ≠ k := by
+        intro hvk
+        subst hvk
+        exact h hv
+      simp [hv_ne_k] at hmem
+      simp [hmem]
+    have hA :
+      distUpToList G ks i j ≤ pathWeight G p :=
+      distUpToList_le_of_path ks i j p hp_path hp_verts_ks
+    have h1 := (min_le_left (distUpToList G ks i j)
+      (distUpToList G ks i k + distUpToList G ks k j)).trans hA
+    rw [hp_weight] at h1
+    exact h1
+
 -- any path from i to j that can use k is at least as long as the
 -- shorter of the path that doesn't use k and the path that goes via k
 lemma fwStep_lower_bound (ks : List (Fin n)) (k i j : Fin n) :
@@ -139,22 +150,7 @@ lemma fwStep_lower_bound (ks : List (Fin n)) (k i j : Fin n) :
     · -- case 2: p doesn't use k
       -- any path from i to j that doesn't use k is still a valid path
       -- when we add k to the list of intermediate vertices
-      have hp_verts_ks : ∀ v ∈ p, v ∈ ks ∨ v = i ∨ v = j := by
-        intro v hv
-        have hmem := hp_verts v hv
-        have hv_ne_k : v ≠ k := by
-          intro hvk
-          subst hvk
-          exact h hv
-        simp [hv_ne_k] at hmem
-        simp [hmem]
-      have hA :
-        distUpToList G ks i j ≤ pathWeight G p :=
-        distUpToList_le_of_path ks i j p hp_path hp_verts_ks
-      have h1 := (min_le_left (distUpToList G ks i j)
-        (distUpToList G ks i k + distUpToList G ks k j)).trans hA
-      rw [hp_weight] at h1
-      exact h1
+      exact fwStep_lower_bound_without_k ks k i j p hp_path hp_verts hp_weight h
 
 -- proof for adding vertex k to the list of intermediate vertices
 lemma fwStep_invariant (ks : List (Fin n)) (k i j : Fin n) :

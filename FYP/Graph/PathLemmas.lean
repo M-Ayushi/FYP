@@ -142,7 +142,7 @@ lemma isPathFromTo_prefix (p1 p2 : List (Fin n))
     have hstart_prefix : pathStart (p1 ++ [k]) = some i := by
       simp [<- hstart, pathStart_prefix p1 p2 k]
     have hend_prefix : pathEnd (p1 ++ [k]) = some k := by
-      exact pathEnd_append p1 ([k] ++ []) (by simp)
+      exact pathEnd_append p1 [k] (by simp)
     exact ⟨ hvalid_prefix, hstart_prefix, hend_prefix ⟩
 
 lemma isPathFromTo_suffix (p1 p2 : List (Fin n))

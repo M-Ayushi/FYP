@@ -24,12 +24,17 @@ lemma initDist_eq_sInf_diag (j : Fin n) :
     · simp [initDist]
 
 lemma initDist_le_pathWeight_two_vertices (i j : Fin n) (h : i ≠ j)
-  (p : Path n) (hp_path : isPathFromTo G p i j) (hverts : ∀ v ∈ p, v = i ∨ v = j) :
+  (p : Path n) (hpath : isPathFromTo G p i j) (hverts : ∀ v ∈ p, v = i ∨ v = j) :
   G.w i j ≤ pathWeight G p := by
-    rcases hp_path with ⟨hvalid, hstart, hend⟩
+    rcases hpath with ⟨ hvalid, hstart, hend ⟩
     induction p with
     | nil => contradiction
     | cons x xs =>
+      rename_i ih
+      have hx : x = i := by
+        simp only [pathStart, Option.some.injEq] at hstart
+        exact hstart
+      subst hx
       cases xs with
       | nil =>
           simp only [pathStart, pathEnd] at hstart hend
@@ -37,51 +42,35 @@ lemma initDist_le_pathWeight_two_vertices (i j : Fin n) (h : i ≠ j)
           cases hend
           exact (h rfl).elim
       | cons y ys =>
-        rename_i ih
-        have hx : x = i := by
-          simp only [pathStart, Option.some.injEq] at hstart
-          exact hstart
-        subst hx
         have hy := hverts y (by simp)
         cases hy with
         | inl hy_i =>
             rw [hy_i] at hvalid hstart hend hverts ih
-            have self_weight : G.w x x = 0 := by
-              exact G.self_weight x
-            simp only [pathWeight, ge_iff_le, hy_i, self_weight, zero_add, ge_iff_le]
+            simp only [pathWeight, ge_iff_le, hy_i, G.self_weight x, zero_add, ge_iff_le]
             have all_x_j : (∀ v ∈ x :: ys, v = x ∨ v = j) := by
               simp only [List.mem_cons, or_self_left] at hverts
               simp only [List.mem_cons]
               exact hverts
+            have hvalid' : validPath G ([x] ++ ys) := by
+                exact validPath_suffix [x] ys x hvalid
             have hstart' : pathStart (x :: ys) = some x := by
               simp [pathStart]
             have hend' : pathEnd (x :: ys) = some j := by
               simpa [pathEnd] using hend
-            have hvalid' : validPath G ([x] ++ ys) := by
-                exact validPath_suffix [x] ys x hvalid
-            simp only at hvalid'
-            have h1 := ih all_x_j hvalid' hstart' hend'
-            exact h1
+            exact ih all_x_j hvalid' hstart' hend'
         | inr hy_j =>
             simp [hy_j]
-
-lemma initDist_le_sInf_neq (i j : Fin n) (h : i ≠ j) :
-  initDist G i j ≤
-    sInf {w | ∃ p, isPathFromTo G p i j ∧
-            (∀ v ∈ p, v = i ∨ v = j) ∧ pathWeight G p = w} := by
-  simp only [initDist, h]
-  apply le_sInf
-  intro w hw
-  rcases hw with ⟨p, hp_path, hp_verts⟩
-  rcases hp_verts with ⟨hverts, rfl⟩
-  simp only [↓reduceIte]
-  exact initDist_le_pathWeight_two_vertices i j h p hp_path hverts
 
 lemma initDist_eq_sInf_offdiag (i j : Fin n) (h : i ≠ j) :
   initDist G i j = sInf {w | ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v = i ∨ v = j)
                      ∧ pathWeight G p = w} := by
   apply le_antisymm
-  · exact initDist_le_sInf_neq i j h
+  · simp only [initDist, h]
+    apply le_sInf
+    intro w hw
+    rcases hw with ⟨p, hp_path, hp_verts⟩
+    rcases hp_verts with ⟨hverts, rfl⟩
+    exact initDist_le_pathWeight_two_vertices i j h p hp_path hverts
   · apply sInf_le
     refine ⟨[i, j], ⟨?path_valid, ?path_start, ?path_end⟩, ?verts⟩
     · simp [validPath, path_valid G i j h]
