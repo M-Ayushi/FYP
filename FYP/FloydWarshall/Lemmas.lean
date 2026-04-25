@@ -9,7 +9,7 @@ namespace FYP
 
 -- any path from i to j that can use k is less than
 -- or equal to the path that goes via k
-lemma fwStep_le_split (ks : List (Fin n)) (k i j : Fin n) :
+lemma fwStep_upper_bound_via_k (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j := by
   -- apply infimum lemma
   unfold distUpToList
@@ -55,20 +55,26 @@ lemma fwStep_le_split (ks : List (Fin n)) (k i j : Fin n) :
     · simp only [distUpToList] at hp1_w hp2_w
       rw [<- hp1_w, <- hp2_w, pathWeight_append_tail p1 p2 hvalid1 h_link]
 
-lemma fwStep_lower_bound_with_k (ks : List (Fin n)) (k i j : Fin n)
-  (p : Path n) (hp_path : isPathFromTo G p i j) (hp_verts : ∀ v ∈ p, v ∈ k :: ks)
-  (hp_weight : pathWeight G p = distUpToList G (k :: ks) i j) (h : k ∈ p) :
-  min (distUpToList G ks i j)
-    (distUpToList G ks i k + distUpToList G ks k j) ≤
-      distUpToList G (k :: ks) i j := by
-    let p1 := p.takeWhile (fun v => v ≠ k)
-    let p2 := p.drop (p1.length + 1)
-    have hp_split : p = p1 ++ [k] ++ p2 :=
-      takeWhile_drop_split k p h
-    simp only [hp_split] at hp_path
-    simp only [List.mem_cons] at hp_verts
-    have split_prefix := isPathFromTo_prefix p1 p2 i j k hp_path
-    have split_suffix := isPathFromTo_suffix p1 p2 i j k hp_path
+lemma pathWeight_eq_split_sum (k i j : Fin n) (p p1 p2 : Path n)
+  (hp_split : p = p1 ++ [k] ++ p2)
+  (hp_path : isPathFromTo G (p1 ++ [k] ++ p2) i j)
+  : pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
+    have h_valid : validPath G (p1 ++ [k]) := by
+      simp [isPathFromTo] at hp_path
+      exact validPath_prefix p1 p2 k (by simp [hp_path.left])
+    have h_end : pathEnd (p1 ++ [k]) = pathStart ([k] ++ p2) := by
+      simp [pathEnd_append p1 [k] (by simp), pathStart, pathEnd]
+    rw [<- pathWeight_append_tail (p1 ++ [k]) ([k] ++ p2) h_valid h_end]
+    simp [hp_split]
+
+lemma fwStep_split_cost_le (ks : List (Fin n)) (k i j : Fin n) (p p1 p2 : Path n)
+  (hp_split : p = p1 ++ [k] ++ p2)
+  (hp_path : isPathFromTo G (p1 ++ [k] ++ p2) i j)
+  (hp_verts : ∀ v ∈ p, v = k ∨ v ∈ ks)
+  (split_prefix : isPathFromTo G (p1 ++ [k]) i k)
+  (split_suffix : isPathFromTo G ([k] ++ p2) k j) :
+  distUpToList G ks i k + distUpToList G ks k j ≤ pathWeight G p := by
+    -- pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
     have hp_verts_p1 : ∀ v ∈ p1 ++ [k], v ∈ ks ∨ v = i ∨ v = k := by
       intros v hv;
       have hv_p : v ∈ p := by
@@ -95,19 +101,28 @@ lemma fwStep_lower_bound_with_k (ks : List (Fin n)) (k i j : Fin n)
     have h2 : distUpToList G ks k j ≤ pathWeight G ([k] ++ p2) := by
       exact distUpToList_le_of_path ks k j ([k] ++ p2)
         (split_suffix) hp_verts_p2
-    have hp_sum :
-      pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
-        have h_valid : validPath G (p1 ++ [k]) := by
-          simp [isPathFromTo] at hp_path
-          exact validPath_prefix p1 p2 k (by simp [hp_path.left])
-        have h_end : pathEnd (p1 ++ [k]) = pathStart ([k] ++ p2) := by
-          simp [pathEnd_append p1 [k] (by simp), pathStart, pathEnd]
-        rw [<- pathWeight_append_tail (p1 ++ [k]) ([k] ++ p2) h_valid h_end]
-        simp [hp_split]
-    -- transitivity
+    have hsum : pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) :=
+      pathWeight_eq_split_sum k i j p p1 p2 hp_split hp_path
+    rw [hsum]
+    exact add_le_add h1 h2
+
+lemma fwStep_lower_bound_with_k (ks : List (Fin n)) (k i j : Fin n)
+  (p : Path n) (hp_path : isPathFromTo G p i j) (hp_verts : ∀ v ∈ p, v ∈ k :: ks)
+  (hp_weight : pathWeight G p = distUpToList G (k :: ks) i j) (h : k ∈ p) :
+  min (distUpToList G ks i j)
+    (distUpToList G ks i k + distUpToList G ks k j) ≤
+      distUpToList G (k :: ks) i j := by
+    let p1 := p.takeWhile (fun v => v ≠ k)
+    let p2 := p.drop (p1.length + 1)
+    have hp_split : p = p1 ++ [k] ++ p2 :=
+      takeWhile_drop_split k p h
+    simp only [hp_split] at hp_path
+    simp only [List.mem_cons] at hp_verts
+    have split_prefix := isPathFromTo_prefix p1 p2 i j k hp_path
+    have split_suffix := isPathFromTo_suffix p1 p2 i j k hp_path
     have h_total : distUpToList G ks i k + distUpToList G ks k j ≤ pathWeight G p := by
-      simp only [hp_sum]
-      exact add_le_add h1 h2
+      exact fwStep_split_cost_le ks k i j p p1 p2
+        hp_split hp_path hp_verts split_prefix split_suffix
     have h_right :
       distUpToList G ks i k + distUpToList G ks k j
         ≤ distUpToList G (k :: ks) i j := by
@@ -167,6 +182,6 @@ lemma fwStep_invariant (ks : List (Fin n)) (k i j : Fin n) :
         exact List.mem_cons_of_mem k hv
       exact distUpToList_mono ks (k :: ks) subsetofList i j
     · -- distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j
-      exact fwStep_le_split ks k i j
+      exact fwStep_upper_bound_via_k ks k i j
 
 end FYP
