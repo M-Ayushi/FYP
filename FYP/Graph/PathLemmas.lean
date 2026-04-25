@@ -76,7 +76,8 @@ lemma pathStart_prefix (p1 p2 : List (Fin n)) (k : Fin n) :
     | cons hd tl => simp [pathStart]
 
 lemma pathStart_append_tail (p1 p2 : Path n)
-  (h : p1 ≠ []) : pathStart (p1 ++ p2.tail) = pathStart p1 := by
+  (hstart1 : pathStart p1 = some k) :
+  pathStart (p1 ++ p2.tail) = pathStart p1 := by
     unfold pathStart
     cases p1 with
     | nil => contradiction
@@ -101,7 +102,7 @@ lemma pathEnd_suffix (p1 p2 : List (Fin n)) (k : Fin n) :
     exact h.symm
 
 lemma pathEnd_append_tail (p1 p2 : Path n)
-  (h_link : pathEnd p1 = pathStart p2) (h : p2 ≠ []) :
+  (h_link : pathEnd p1 = pathStart p2) (hend2 : pathEnd p2 = some j) :
   pathEnd (p1 ++ p2.tail) = pathEnd p2 := by
     cases p2 with
     | nil => contradiction
@@ -130,31 +131,5 @@ lemma pathWeight_append_tail (p1 p2 : Path n)
         have hlink' : pathEnd (y :: ys) = pathStart p2 := by
           simpa [pathEnd] using hlink
         simp [ih hvalid hlink', add_assoc]
-
--- isPathFromTo lemmas
-
-lemma isPathFromTo_prefix (p1 p2 : List (Fin n))
-  (i j k : Fin n) (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
-  isPathFromTo G (p1 ++ [k]) i k := by
-    rcases h with ⟨ hvalid, hstart, hend ⟩
-    have hvalid_prefix : validPath G (p1 ++ [k]) := by
-      exact validPath_prefix p1 p2 k hvalid
-    have hstart_prefix : pathStart (p1 ++ [k]) = some i := by
-      simp [<- hstart, pathStart_prefix p1 p2 k]
-    have hend_prefix : pathEnd (p1 ++ [k]) = some k := by
-      exact pathEnd_append p1 [k] (by simp)
-    exact ⟨ hvalid_prefix, hstart_prefix, hend_prefix ⟩
-
-lemma isPathFromTo_suffix (p1 p2 : List (Fin n))
-  (i j k : Fin n) (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
-  isPathFromTo G ([k] ++ p2) k j := by
-    rcases h with ⟨ hvalid, hstart, hend ⟩
-    have hvalid_suffix : validPath G ([k] ++ p2) := by
-      exact validPath_suffix p1 p2 k hvalid
-    have hstart_suffix : pathStart ([k] ++ p2) = k := by
-      simp [pathStart]
-    have hend_suffix : pathEnd ([k] ++ p2) = j := by
-      simp only [<- hend, pathEnd_suffix p1 p2 k]
-    exact ⟨ hvalid_suffix, hstart_suffix, hend_suffix ⟩
 
 end FYP

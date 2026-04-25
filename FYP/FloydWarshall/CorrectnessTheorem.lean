@@ -6,6 +6,23 @@ import FYP.FloydWarshall.Lemmas
 
 namespace FYP
 
+-- proof for adding vertex k to the list of intermediate vertices
+lemma fwStep_invariant (ks : List (Fin n)) (k i j : Fin n) :
+  min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j)
+    = distUpToList G (k :: ks) i j := by
+  apply le_antisymm
+  · -- lower bound: show min ... ≤ distUpToList G (k :: ks) i j
+    exact fwStep_lower_bound ks k i j
+  · -- upper bound: show distUpToList G (k :: ks) i j ≤ min ...
+    apply le_min
+    · -- distUpToList G (k :: ks) i j ≤ distUpToList G ks i j
+      have subsetofList : ∀ v, v ∈ ks → v ∈ k :: ks := by
+        intro v hv
+        exact List.mem_cons_of_mem k hv
+      exact distUpToList_mono ks (k :: ks) subsetofList i j
+    · -- distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j
+      exact fwStep_upper_bound_via_k ks k i j
+
 lemma fw_invariant :
   ∀ (l : List (Fin n)) (i j : Fin n),
     (l.foldl fwStep (initDist G)) i j = distUpToList G l i j := by

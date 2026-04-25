@@ -45,10 +45,4 @@ def isPathFromTo (G : Graph n) (p : Path n) (i j : Fin n) : Prop :=
 noncomputable def shortestDist (G : Graph n) (i j : Fin n) : ℕ∞ :=
   sInf {w | ∃ p, isPathFromTo G p i j ∧ pathWeight G p = w}
 
-noncomputable def distUpToList (G : Graph n) (l : List (Fin n)) (i j : Fin n) : ℕ∞ :=
-  sInf {w | ∃ p,
-    isPathFromTo G p i j ∧
-    (∀ v ∈ p, v ∈ l ∨ v = i ∨ v = j) ∧
-    pathWeight G p = w}
-
 end FYP

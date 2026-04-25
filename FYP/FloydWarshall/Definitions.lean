@@ -1,4 +1,5 @@
 import FYP.Graph.Basic
+import FYP.Graph.Path
 
 namespace FYP
 
@@ -7,6 +8,12 @@ namespace FYP
 
 def initDist {n} (G : Graph n) : Fin n → Fin n → ℕ∞ :=
   fun i j => if i = j then 0 else G.w i j
+
+noncomputable def distUpToList (G : Graph n) (l : List (Fin n)) (i j : Fin n) : ℕ∞ :=
+  sInf {w | ∃ p,
+    isPathFromTo G p i j ∧
+    (∀ v ∈ p, v ∈ l ∨ v = i ∨ v = j) ∧
+    pathWeight G p = w}
 
 noncomputable def fwStep {n} (distance : Fin n → Fin n → ℕ∞) (k : Fin n) :
   Fin n → Fin n → ℕ∞ :=
