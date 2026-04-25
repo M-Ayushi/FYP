@@ -11,7 +11,6 @@ namespace FYP
 -- or equal to the path that goes via k
 lemma fwStep_upper_bound_via_k (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j := by
-  -- apply infimum lemma
   unfold distUpToList
   apply csInf_le
   · refine ⟨0, ?_⟩
@@ -21,7 +20,6 @@ lemma fwStep_upper_bound_via_k (ks : List (Fin n)) (k i j : Fin n) :
       ⟨p1, hp1_path, hp1_verts, hp1_w⟩
     rcases exists_path_weight_eq_distUpToList ks k j with
       ⟨p2, hp2_path, hp2_verts, hp2_w⟩
-    -- define concatenation
     let p := p1 ++ p2.tail
     rcases hp1_path with ⟨hvalid1, hstart1, hend1⟩
     rcases hp2_path with ⟨hvalid2, hstart2, hend2⟩
@@ -55,8 +53,8 @@ lemma fwStep_upper_bound_via_k (ks : List (Fin n)) (k i j : Fin n) :
     · simp only [distUpToList] at hp1_w hp2_w
       rw [<- hp1_w, <- hp2_w, pathWeight_append_tail p1 p2 hvalid1 h_link]
 
-lemma pathWeight_eq_split_sum (k i j : Fin n) (p p1 p2 : Path n)
-  (hp_split : p = p1 ++ [k] ++ p2)
+lemma pathWeight_eq_split_sum (k i j : Fin n)
+  (p p1 p2 : Path n) (hp_split : p = p1 ++ [k] ++ p2)
   (hp_path : isPathFromTo G (p1 ++ [k] ++ p2) i j)
   : pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
     have h_valid : validPath G (p1 ++ [k]) := by
@@ -67,14 +65,11 @@ lemma pathWeight_eq_split_sum (k i j : Fin n) (p p1 p2 : Path n)
     rw [<- pathWeight_append_tail (p1 ++ [k]) ([k] ++ p2) h_valid h_end]
     simp [hp_split]
 
-lemma fwStep_split_cost_le (ks : List (Fin n)) (k i j : Fin n) (p p1 p2 : Path n)
-  (hp_split : p = p1 ++ [k] ++ p2)
-  (hp_path : isPathFromTo G (p1 ++ [k] ++ p2) i j)
+lemma verts_split_left (ks : List (Fin n)) (k i : Fin n)
+  (p p1 p2 : Path n) (hp_split : p = p1 ++ [k] ++ p2)
   (hp_verts : ∀ v ∈ p, v = k ∨ v ∈ ks)
-  (split_prefix : isPathFromTo G (p1 ++ [k]) i k)
-  (split_suffix : isPathFromTo G ([k] ++ p2) k j) :
-  distUpToList G ks i k + distUpToList G ks k j ≤ pathWeight G p := by
-    -- pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
+  (split_prefix : isPathFromTo G (p1 ++ [k]) i k) :
+  distUpToList G ks i k ≤ pathWeight G (p1 ++ [k]) := by
     have hp_verts_p1 : ∀ v ∈ p1 ++ [k], v ∈ ks ∨ v = i ∨ v = k := by
       intros v hv;
       have hv_p : v ∈ p := by
@@ -85,9 +80,13 @@ lemma fwStep_split_cost_le (ks : List (Fin n)) (k i j : Fin n) (p p1 p2 : Path n
       cases hp_verts with
       | inl hk => exact Or.inr (Or.inr hk)
       | inr hks => exact Or.inl hks
-    have h1 : distUpToList G ks i k ≤ pathWeight G (p1 ++ [k]) :=
-      distUpToList_le_of_path ks i k (p1 ++ [k])
-        (split_prefix) (hp_verts_p1)
+    exact distUpToList_le_of_path ks i k (p1 ++ [k]) split_prefix hp_verts_p1
+
+lemma verts_split_right (ks : List (Fin n)) (k j : Fin n)
+  (p p1 p2 : Path n) (hp_split : p = p1 ++ [k] ++ p2)
+  (hp_verts : ∀ v ∈ p, v = k ∨ v ∈ ks)
+  (split_suffix : isPathFromTo G ([k] ++ p2) k j) :
+  distUpToList G ks k j ≤ pathWeight G ([k] ++ p2) := by
     have hp_verts_p2 : ∀ v ∈ ([k] ++ p2), v ∈ ks ∨ v = k ∨ v = j := by
       intros v hv
       have hv_p : v ∈ p := by
@@ -98,9 +97,19 @@ lemma fwStep_split_cost_le (ks : List (Fin n)) (k i j : Fin n) (p p1 p2 : Path n
       cases hp_verts with
       | inl hk => exact Or.inr (Or.inl hk)
       | inr hks => exact Or.inl hks
-    have h2 : distUpToList G ks k j ≤ pathWeight G ([k] ++ p2) := by
-      exact distUpToList_le_of_path ks k j ([k] ++ p2)
-        (split_suffix) hp_verts_p2
+    exact distUpToList_le_of_path ks k j ([k] ++ p2) split_suffix hp_verts_p2
+
+lemma fwStep_split_cost_le (ks : List (Fin n)) (k i j : Fin n)
+  (p p1 p2 : Path n) (hp_split : p = p1 ++ [k] ++ p2)
+  (hp_path : isPathFromTo G (p1 ++ [k] ++ p2) i j)
+  (hp_verts : ∀ v ∈ p, v = k ∨ v ∈ ks) :
+  distUpToList G ks i k + distUpToList G ks k j ≤ pathWeight G p := by
+    have split_prefix := isPathFromTo_prefix p1 p2 i j k hp_path
+    have split_suffix := isPathFromTo_suffix p1 p2 i j k hp_path
+    have h1 : distUpToList G ks i k ≤ pathWeight G (p1 ++ [k]) :=
+      verts_split_left ks k i p p1 p2 hp_split hp_verts split_prefix
+    have h2 : distUpToList G ks k j ≤ pathWeight G ([k] ++ p2) :=
+      verts_split_right ks k j p p1 p2 hp_split hp_verts split_suffix
     have hsum : pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) :=
       pathWeight_eq_split_sum k i j p p1 p2 hp_split hp_path
     rw [hsum]
@@ -118,11 +127,9 @@ lemma fwStep_lower_bound_with_k (ks : List (Fin n)) (k i j : Fin n)
       takeWhile_drop_split k p h
     simp only [hp_split] at hp_path
     simp only [List.mem_cons] at hp_verts
-    have split_prefix := isPathFromTo_prefix p1 p2 i j k hp_path
-    have split_suffix := isPathFromTo_suffix p1 p2 i j k hp_path
     have h_total : distUpToList G ks i k + distUpToList G ks k j ≤ pathWeight G p := by
       exact fwStep_split_cost_le ks k i j p p1 p2
-        hp_split hp_path hp_verts split_prefix split_suffix
+        hp_split hp_path hp_verts
     have h_right :
       distUpToList G ks i k + distUpToList G ks k j
         ≤ distUpToList G (k :: ks) i j := by
@@ -143,8 +150,7 @@ lemma fwStep_lower_bound_without_k (ks : List (Fin n)) (k i j : Fin n) (p : Path
         exact h hv
       simp [hv_ne_k] at hmem
       simp [hmem]
-    have hA :
-      distUpToList G ks i j ≤ pathWeight G p :=
+    have hA : distUpToList G ks i j ≤ pathWeight G p :=
       distUpToList_le_of_path ks i j p hp_path hp_verts_ks
     have h1 := (min_le_left (distUpToList G ks i j)
       (distUpToList G ks i k + distUpToList G ks k j)).trans hA
