@@ -1,8 +1,6 @@
-import FYP.Graph.Basic
-import FYP.Graph.Path
 import FYP.Graph.PathLemmas
 import FYP.FloydWarshall.Definitions
-import FYP.FloydWarshall.Lemmas
+import FYP.FloydWarshall.FWStepLemmas
 
 namespace FYP
 
@@ -12,7 +10,11 @@ lemma fwStep_invariant (ks : List (Fin n)) (k i j : Fin n) :
     = distUpToList G (k :: ks) i j := by
   apply le_antisymm
   · -- lower bound: show min ... ≤ distUpToList G (k :: ks) i j
-    exact fwStep_lower_bound ks k i j
+    obtain ⟨p, hp_path, hp_verts, hp_weight⟩ :=
+      exists_path_weight_eq_distUpToList G (k :: ks) i j
+    by_cases h : k ∈ p
+    · exact fwStep_lower_bound_with_k G ks k i j p hp_path hp_verts hp_weight h
+    · exact fwStep_lower_bound_without_k G ks k i j p hp_path hp_verts hp_weight h
   · -- upper bound: show distUpToList G (k :: ks) i j ≤ min ...
     apply le_min
     · -- distUpToList G (k :: ks) i j ≤ distUpToList G ks i j
@@ -21,7 +23,7 @@ lemma fwStep_invariant (ks : List (Fin n)) (k i j : Fin n) :
         exact List.mem_cons_of_mem k hv
       exact distUpToList_mono ks (k :: ks) subsetofList i j
     · -- distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j
-      exact fwStep_upper_bound_via_k ks k i j
+      exact fwStep_upper_bound_via_k G ks k i j
 
 lemma fw_invariant :
   ∀ (l : List (Fin n)) (i j : Fin n),

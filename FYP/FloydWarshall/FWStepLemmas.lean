@@ -3,51 +3,12 @@ import FYP.Graph.Path
 import FYP.Graph.PathLemmas
 import FYP.Graph.PathSplit
 import FYP.FloydWarshall.Definitions
-import FYP.FloydWarshall.HelperLemmas
 import FYP.FloydWarshall.DistanceLemmas
 import FYP.FloydWarshall.PathSplitLemmas
 
 namespace FYP
 
--- any path from i to j that can use k is less than
--- or equal to the path that goes via k
-lemma fwStep_upper_bound_via_k (ks : List (Fin n)) (k i j : Fin n) :
-  distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j := by
-  unfold distUpToList
-  apply csInf_le
-  · refine ⟨0, ?_⟩
-    intro w hw
-    exact zero_le _
-  · rcases exists_path_weight_eq_distUpToList ks i k with
-      ⟨p1, hp1_path, hp1_verts, hp1_w⟩
-    rcases exists_path_weight_eq_distUpToList ks k j with
-      ⟨p2, hp2_path, hp2_verts, hp2_w⟩
-    let p := p1 ++ p2.tail
-    rcases hp1_path with ⟨hvalid1, hstart1, hend1⟩
-    rcases hp2_path with ⟨hvalid2, hstart2, hend2⟩
-    have h_link : pathEnd p1 = pathStart p2 := by
-      simp [hend1, hstart2]
-    refine ⟨p, ?_, ?_, ?_⟩
-    · refine ⟨?_, ?_, ?_⟩
-      · exact validPath_append_tail p1 p2 h_link hvalid1 hvalid2
-      · have pathStart_eq : pathStart p = pathStart p1 := by
-          exact pathStart_append_tail p1 p2 hstart1
-        simp [hstart1, pathStart_eq]
-      · have pathEnd_eq : pathEnd p = pathEnd p2 := by
-          exact pathEnd_append_tail p1 p2 h_link hend2
-        simp [hend2, pathEnd_eq]
-    · intro v hv
-      unfold p at hv
-      cases List.mem_append.mp hv with
-      | inl hv1 =>
-          simp [hp1_verts v hv1]
-      | inr hv2 =>
-          have hv2' : v ∈ p2 := List.mem_of_mem_tail hv2
-          simp [hp2_verts v hv2']
-    · simp only [distUpToList] at hp1_w hp2_w
-      rw [<- hp1_w, <- hp2_w, pathWeight_append_tail p1 p2 hvalid1 h_link]
-
-lemma fwStep_lower_bound_with_k (ks : List (Fin n)) (k i j : Fin n)
+lemma fwStep_lower_bound_with_k (G : Graph n) (ks : List (Fin n)) (k i j : Fin n)
   (p : Path n) (hp_path : isPathFromTo G p i j) (hp_verts : ∀ v ∈ p, v ∈ k :: ks)
   (hp_weight : pathWeight G p = distUpToList G (k :: ks) i j) (h : k ∈ p) :
   min (distUpToList G ks i j)
@@ -68,7 +29,7 @@ lemma fwStep_lower_bound_with_k (ks : List (Fin n)) (k i j : Fin n)
       simpa [hp_weight] using h_total
     exact inf_le_of_right_le h_right
 
-lemma fwStep_lower_bound_without_k (ks : List (Fin n)) (k i j : Fin n) (p : Path n)
+lemma fwStep_lower_bound_without_k (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) (p : Path n)
   (hp_path : isPathFromTo G p i j) (hp_verts : ∀ v ∈ p, v ∈ k :: ks)
   (hp_weight : pathWeight G p = distUpToList G (k :: ks) i j) (h : k ∉ p) :
   min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j)
@@ -89,20 +50,34 @@ lemma fwStep_lower_bound_without_k (ks : List (Fin n)) (k i j : Fin n) (p : Path
     rw [hp_weight] at h1
     exact h1
 
--- any path from i to j that can use k is at least as long as the
--- shorter of the path that doesn't use k and the path that goes via k
-lemma fwStep_lower_bound (ks : List (Fin n)) (k i j : Fin n) :
-  min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j) ≤
-    distUpToList G (k :: ks) i j := by
-    obtain ⟨p, hp_path, hp_verts, hp_weight⟩ :=
-      exists_path_weight_eq_distUpToList (k :: ks) i j
-    by_cases h : k ∈ p
-    · -- path from i to j that uses k can be split into
-      -- a path from i to k and a path from k to j
-      exact fwStep_lower_bound_with_k ks k i j p hp_path hp_verts hp_weight h
-    · -- case 2: p doesn't use k
-      -- any path from i to j that doesn't use k is still a valid path
-      -- when we add k to the list of intermediate vertices
-      exact fwStep_lower_bound_without_k ks k i j p hp_path hp_verts hp_weight h
+-- any path from i to j that can use k is less than
+-- or equal to the path that goes via k
+lemma fwStep_upper_bound_via_k (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
+  distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j := by
+  apply csInf_le
+  · refine ⟨0, ?_⟩
+    intro w hw
+    exact zero_le _
+  · rcases exists_path_weight_eq_distUpToList G ks i k with
+      ⟨p1, hp1_path, hp1_verts, hp1_w⟩
+    rcases exists_path_weight_eq_distUpToList G ks k j with
+      ⟨p2, hp2_path, hp2_verts, hp2_w⟩
+    let p := p1 ++ p2.tail
+    rcases hp1_path with ⟨hvalid1, hstart1, hend1⟩
+    rcases hp2_path with ⟨hvalid2, hstart2, hend2⟩
+    have h_link : pathEnd p1 = pathStart p2 := by
+      simp [hend1, hstart2]
+    refine ⟨p, ?_, ?_, ?_⟩
+    · exact isPathFromTo_appendTail G i j p1 p2 hvalid1 hstart1 hvalid2 hend2 h_link
+    · intro v hv
+      unfold p at hv
+      cases List.mem_append.mp hv with
+      | inl hv1 =>
+          simp [hp1_verts v hv1]
+      | inr hv2 =>
+          have hv2' : v ∈ p2 := List.mem_of_mem_tail hv2
+          simp [hp2_verts v hv2']
+    · rw [<- hp1_w, <- hp2_w, pathWeight_append_tail p1 p2 hvalid1 h_link]
+
 
 end FYP

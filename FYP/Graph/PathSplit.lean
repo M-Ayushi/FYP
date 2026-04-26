@@ -58,6 +58,20 @@ lemma isPathFromTo_suffix (p1 p2 : List (Fin n))
       simp only [<- hend, pathEnd_suffix p1 p2 k]
     exact ⟨ hvalid_suffix, hstart_suffix, hend_suffix ⟩
 
+lemma isPathFromTo_appendTail (G : Graph n) (i j : Fin n)
+  (p1 p2 : Path n) (hvalid1 : validPath G p1)
+  (hstart1 : pathStart p1 = some i) (hvalid2 : validPath G p2)
+  (hend2 : pathEnd p2 = some j) (h_link : pathEnd p1 = pathStart p2) :
+  isPathFromTo G (p1 ++ p2.tail) i j := by
+  refine ⟨?_, ?_, ?_⟩
+  · exact validPath_append_tail p1 p2 h_link hvalid1 hvalid2
+  · have pathStart_eq : pathStart (p1 ++ p2.tail) = pathStart p1 := by
+      exact pathStart_append_tail p1 p2 hstart1
+    simp [hstart1, pathStart_eq]
+  · have pathEnd_eq : pathEnd (p1 ++ p2.tail) = pathEnd p2 := by
+      exact pathEnd_append_tail p1 p2 h_link hend2
+    simp [hend2, pathEnd_eq]
+
 lemma pathWeight_eq_split_sum (k i j : Fin n)
   (p p1 p2 : Path n) (hp_split : p = p1 ++ [k] ++ p2)
   (hp_path : isPathFromTo G (p1 ++ [k] ++ p2) i j)

@@ -2,7 +2,6 @@ import FYP.Graph.Basic
 import FYP.Graph.Path
 import FYP.Graph.PathLemmas
 import FYP.FloydWarshall.Definitions
-import FYP.FloydWarshall.HelperLemmas
 
 namespace FYP
 
@@ -61,6 +60,18 @@ lemma initDist_le_pathWeight_two_vertices (i j : Fin n) (h : i ≠ j)
         | inr hy_j =>
             simp [hy_j]
 
+lemma mem_pair_iff {n : ℕ} (i j : Fin n) :
+ ∀ v ∈ [i, j], v = i ∨ v = j := by
+  intro v hv
+  cases List.mem_cons.mp hv with
+  | inl h1 =>
+    left
+    rw [h1]
+  | inr h2 =>
+    right
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at h2
+    exact h2
+
 lemma initDist_eq_sInf_offdiag (i j : Fin n) (h : i ≠ j) :
   initDist G i j = sInf {w | ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v = i ∨ v = j)
                      ∧ pathWeight G p = w} := by
@@ -115,8 +126,9 @@ lemma distUpToList_mono (ks1 ks2 : List (Fin n))
 
 -- normally an infimum is not guaranteed to be attained, but in this case
 -- we are restricted to only positive integer weights so the infimum is actually a minimum
-lemma exists_path_weight_eq_distUpToList (ks : List (Fin n)) (i j : Fin n) :
-  ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v ∈ ks) -- ∨ v = i ∨ v = j)
+lemma exists_path_weight_eq_distUpToList (G : Graph n)
+  (ks : List (Fin n)) (i j : Fin n) :
+  ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v ∈ ks)
       ∧ pathWeight G p = distUpToList G ks i j := by
     unfold distUpToList
     sorry
