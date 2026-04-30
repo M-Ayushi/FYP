@@ -7,13 +7,13 @@ lemma fwStep_invariant (ks : List (Fin n)) (k i j : Fin n) :
   min (distUpToList G ks i j) (distUpToList G ks i k + distUpToList G ks k j)
     = distUpToList G (k :: ks) i j := by
   apply le_antisymm
-  · -- lower bound: show min ... ≤ distUpToList G (k :: ks) i j
-    obtain ⟨p, hp_path, hp_verts, hp_weight⟩ :=
+  · -- lower bound: min ... ≤ distUpToList G (k :: ks) i j
+    obtain ⟨ p, hp_path, hp_verts, hp_weight ⟩ :=
       exists_path_weight_eq_distUpToList G (k :: ks) i j
     by_cases h : k ∈ p
     · exact fwStep_lower_bound_with_k G ks k i j p hp_path hp_verts hp_weight h
     · exact fwStep_lower_bound_without_k G ks k i j p hp_path hp_verts hp_weight h
-  · -- upper bound: show distUpToList G (k :: ks) i j ≤ min ...
+  · -- upper bound: distUpToList G (k :: ks) i j ≤ min ...
     apply le_min
     · -- distUpToList G (k :: ks) i j ≤ distUpToList G ks i j
       have subsetofList : ∀ v, v ∈ ks → v ∈ k :: ks := by
@@ -28,8 +28,7 @@ lemma fw_invariant :
     (l.foldl fwStep (initDist G)) i j = distUpToList G l i j := by
   intro l
   induction l using List.reverseRecOn with
-  | nil =>
-    apply initDist_eq_sInf
+  | nil => apply initDist_eq_sInf
   | append_singleton ks k ih =>
     intro i j
     simp only [List.foldl_append, List.foldl]

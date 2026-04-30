@@ -42,15 +42,16 @@ lemma fwStep_split_cost_le (ks : List (Fin n)) (k i j : Fin n)
   (hp_path : isPathFromTo G (p1 ++ [k] ++ p2) i j)
   (hp_verts : ∀ v ∈ p, v = k ∨ v ∈ ks) :
   distUpToList G ks i k + distUpToList G ks k j ≤ pathWeight G p := by
-    have split_prefix := isPathFromTo_prefix p1 p2 i j k hp_path
-    have split_suffix := isPathFromTo_suffix p1 p2 i j k hp_path
+    have split_prefix := isPathFromTo_prefix p1 p2 i k hp_path
+    have split_suffix := isPathFromTo_suffix p1 p2 j k hp_path
     have h1 : distUpToList G ks i k ≤ pathWeight G (p1 ++ [k]) :=
       verts_split_left ks k i p p1 p2 hp_split hp_verts split_prefix
     have h2 : distUpToList G ks k j ≤ pathWeight G ([k] ++ p2) :=
       verts_split_right ks k j p p1 p2 hp_split hp_verts split_suffix
-    have hsum : pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) :=
-      pathWeight_eq_split_sum k i j p p1 p2 hp_split hp_path
-    rw [hsum]
+    have hsum : pathWeight G (p1 ++ [k] ++ p2) =
+        pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) :=
+      pathWeight_eq_split_sum k i j p1 p2 hp_path
+    rw [hp_split, hsum]
     exact add_le_add h1 h2
 
 end FYP

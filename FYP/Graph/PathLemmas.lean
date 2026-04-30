@@ -2,7 +2,7 @@ import FYP.Graph.Path
 
 namespace FYP
 
-lemma rebuild_path {p : Path n} (x : Fin n) (hx : x = pathStart p) :
+lemma rebuildPath {p : Path n} (x : Fin n) (hx : x = pathStart p) :
   p = [x] ++ p.tail := by
     cases p with
     | nil => contradiction
@@ -17,7 +17,7 @@ lemma rebuild_path {p : Path n} (x : Fin n) (hx : x = pathStart p) :
 -- between those vertices.
 -- But the edge weight will always be either a finite number or ∞
 -- Thus can be interpreted as always existing, but possibly with infinite weight.
-lemma path_valid {n} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
+lemma pathValid {n} (G : Graph n) (i j : Fin n) (h : i ≠ j) :
   ¬G.w i j = ⊤ := by sorry
 
 lemma validPath_prefix (p1 p2 : List (Fin n))
@@ -54,7 +54,7 @@ lemma validPath_append_tail (p1 p2 : Path n)
     | cons x xs =>
       cases xs with
       | nil =>
-        simp [<- rebuild_path x hlink, hvalid2]
+        simp [<- rebuildPath x hlink, hvalid2]
       | cons y ys =>
         rename_i ih
         have hlink' : pathEnd (y :: ys) = pathStart p2 := by
@@ -122,13 +122,13 @@ lemma pathWeight_append_tail (p1 p2 : Path n)
     | cons x xs ih =>
       cases xs with
       | nil =>
-        simp [<- rebuild_path x hlink]
+        simp [<- rebuildPath x hlink, pathWeight]
       | cons y ys =>
         simp only [List.cons_append] at *
         have hvalid : validPath G (y :: ys) := by
           exact validPath_suffix [x] ys y hvalid1
         have hlink' : pathEnd (y :: ys) = pathStart p2 := by
           simpa [pathEnd] using hlink
-        simp [ih hvalid hlink', add_assoc]
+        simp [pathWeight, ih hvalid hlink', add_assoc]
 
 end FYP

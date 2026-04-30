@@ -33,7 +33,7 @@ lemma takeWhile_drop_split {n : ℕ} (k : Fin n)
 -- isPathFromTo lemmas
 
 lemma isPathFromTo_prefix (p1 p2 : List (Fin n))
-  (i j k : Fin n) (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
+  (i k : Fin n) (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
   isPathFromTo G (p1 ++ [k]) i k := by
     rcases h with ⟨ hvalid, hstart, hend ⟩
     have hvalid_prefix : validPath G (p1 ++ [k]) := by
@@ -45,7 +45,7 @@ lemma isPathFromTo_prefix (p1 p2 : List (Fin n))
     exact ⟨ hvalid_prefix, hstart_prefix, hend_prefix ⟩
 
 lemma isPathFromTo_suffix (p1 p2 : List (Fin n))
-  (i j k : Fin n) (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
+  (j k : Fin n) (h : isPathFromTo G (p1 ++ [k] ++ p2) i j) :
   isPathFromTo G ([k] ++ p2) k j := by
     rcases h with ⟨ hvalid, hstart, hend ⟩
     have hvalid_suffix : validPath G ([k] ++ p2) := by
@@ -61,7 +61,7 @@ lemma isPathFromTo_appendTail (G : Graph n) (i j : Fin n)
   (hstart1 : pathStart p1 = some i) (hvalid2 : validPath G p2)
   (hend2 : pathEnd p2 = some j) (h_link : pathEnd p1 = pathStart p2) :
   isPathFromTo G (p1 ++ p2.tail) i j := by
-  refine ⟨?_, ?_, ?_⟩
+  refine ⟨ ?_, ?_, ?_ ⟩
   · exact validPath_append_tail p1 p2 h_link hvalid1 hvalid2
   · have pathStart_eq : pathStart (p1 ++ p2.tail) = pathStart p1 := by
       exact pathStart_append_tail p1 p2 hstart1
@@ -70,16 +70,15 @@ lemma isPathFromTo_appendTail (G : Graph n) (i j : Fin n)
       exact pathEnd_append_tail p1 p2 h_link hend2
     simp [hend2, pathEnd_eq]
 
-lemma pathWeight_eq_split_sum (k i j : Fin n)
-  (p p1 p2 : Path n) (hp_split : p = p1 ++ [k] ++ p2)
+lemma pathWeight_eq_split_sum (k i j : Fin n) (p1 p2 : Path n)
   (hp_path : isPathFromTo G (p1 ++ [k] ++ p2) i j)
-  : pathWeight G p = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
+  : pathWeight G (p1 ++ [k] ++ p2) = pathWeight G (p1 ++ [k]) + pathWeight G ([k] ++ p2) := by
     have h_valid : validPath G (p1 ++ [k]) := by
       simp [isPathFromTo] at hp_path
       exact validPath_prefix p1 p2 k (by simp [hp_path.left])
     have h_end : pathEnd (p1 ++ [k]) = pathStart ([k] ++ p2) := by
       simp [pathEnd_append p1 [k] (by simp), pathStart, pathEnd]
     rw [<- pathWeight_append_tail (p1 ++ [k]) ([k] ++ p2) h_valid h_end]
-    simp [hp_split]
+    simp
 
 end FYP

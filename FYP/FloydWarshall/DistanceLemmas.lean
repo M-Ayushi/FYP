@@ -18,7 +18,7 @@ lemma initDist_eq_sInf_diag (j : Fin n) :
     · intro v hv
       rw [List.mem_singleton] at hv
       rw [hv]
-    · simp [initDist]
+    · simp [initDist, pathWeight]
 
 lemma initDist_le_pathWeight_two_vertices (i j : Fin n) (h : i ≠ j)
   (p : Path n) (hpath : isPathFromTo G p i j) (hverts : ∀ v ∈ p, v = i ∨ v = j) :
@@ -33,30 +33,29 @@ lemma initDist_le_pathWeight_two_vertices (i j : Fin n) (h : i ≠ j)
         exact hstart
       subst hx
       cases xs with
-      | nil =>
+      | nil => -- path of length 1, so not valid since i ≠ j
           simp only [pathStart, pathEnd] at hstart hend
           cases hstart
           cases hend
           exact (h rfl).elim
-      | cons y ys =>
+      | cons y ys => -- G.w x j ≤ pathWeight G (x :: y :: ys)
         have hy := hverts y (by simp)
         cases hy with
-        | inl hy_i =>
+        | inl hy_i => -- y = x
             rw [hy_i] at hvalid hstart hend hverts ih
-            simp only [pathWeight, ge_iff_le, hy_i, G.self_weight x, zero_add, ge_iff_le]
+            simp only [pathWeight, hy_i, G.self_weight x, zero_add]
             have all_x_j : (∀ v ∈ x :: ys, v = x ∨ v = j) := by
               simp only [List.mem_cons, or_self_left] at hverts
-              simp only [List.mem_cons]
-              exact hverts
+              simpa only [List.mem_cons]
             have hvalid' : validPath G ([x] ++ ys) := by
-                exact validPath_suffix [x] ys x hvalid
+              exact validPath_suffix [x] ys x hvalid
             have hstart' : pathStart (x :: ys) = some x := by
               simp [pathStart]
             have hend' : pathEnd (x :: ys) = some j := by
               simpa [pathEnd] using hend
             exact ih all_x_j hvalid' hstart' hend'
-        | inr hy_j =>
-            simp [hy_j]
+        | inr hy_j => -- y = j
+            simp [hy_j, pathWeight]
 
 lemma mem_pair_iff {n : ℕ} (i j : Fin n) :
  ∀ v ∈ [i, j], v = i ∨ v = j := by
@@ -74,20 +73,23 @@ lemma initDist_eq_sInf_offdiag (i j : Fin n) (h : i ≠ j) :
   initDist G i j = sInf {w | ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v = i ∨ v = j)
                      ∧ pathWeight G p = w} := by
   apply le_antisymm
-  · simp only [initDist, h]
+  · -- initDist G i j ≤ sInf ...
+    simp only [initDist, h]
     apply le_sInf
     intro w hw
-    rcases hw with ⟨p, hp_path, hp_verts⟩
-    rcases hp_verts with ⟨hverts, rfl⟩
+    rcases hw with ⟨ p, hp_path, hp_verts ⟩
+    rcases hp_verts with ⟨ hverts, rfl ⟩
     exact initDist_le_pathWeight_two_vertices i j h p hp_path hverts
-  · apply sInf_le
-    refine ⟨[i, j], ⟨?path_valid, ?path_start, ?path_end⟩, ?verts⟩
-    · simp [validPath, path_valid G i j h]
+  · -- sInf ... ≤ initDist G i j
+    apply sInf_le
+    -- initDist G i j ∈ {... isPathFromTo G p i j ...}
+    refine ⟨ [i, j], ⟨ ?pathValid, ?path_start, ?path_end ⟩, ?verts ⟩
+    · simp [validPath, pathValid G i j h]
     · simp [pathStart]
     · simp [pathEnd]
     · constructor
       · exact mem_pair_iff i j
-      · simp [initDist, h]
+      · simp [initDist, h, pathWeight]
 
 -- Initial distance function is the same as the shortest distance
 -- considering only paths that use vertices in the empty list
@@ -106,20 +108,23 @@ lemma distUpToList_le_of_path (ks : List (Fin n)) (i j : Fin n)
   distUpToList G ks i j ≤ pathWeight G p := by
     unfold distUpToList
     apply sInf_le
-    exact ⟨p, hp_path, hp_verts, rfl⟩
+    exact ⟨ p, hp_path, hp_verts, rfl ⟩
 
 -- adding a vertex to the list of intermediate vertices is a monotone operation
 -- i.e. it can only decrease distances
-lemma distUpToList_mono (ks1 ks2 : List (Fin n))
-  (h : ∀ v, v ∈ ks1 → v ∈ ks2) :
-  ∀ i j , distUpToList G ks2 i j ≤ distUpToList G ks1 i j := by
+lemma distUpToList_mono (ks1 ks2 : List (Fin n)) (h : ∀ v, v ∈ ks1 → v ∈ ks2) :
+    ∀ i j , distUpToList G ks2 i j ≤ distUpToList G ks1 i j := by
   intro i j
   apply le_sInf
   intro w hw
-  rcases hw with ⟨p, hp_path, hp_vertices, hp_weight⟩
+  rcases hw with ⟨ p, hp_path, hp_vertices, hp_weight ⟩
   rw [<- hp_weight]
   have hp_vertices_ks2 : ∀ v ∈ p, v ∈ ks2 ∨ v = i ∨ v = j := by
-      exact fun v a ↦ Or.imp_left (h v) (hp_vertices v a)
+    intro v hv
+    specialize hp_vertices v hv
+    cases hp_vertices with
+    | inl h_in_ks1 => exact Or.inl (h v h_in_ks1)
+    | inr h_eq => exact Or.inr h_eq
   exact distUpToList_le_of_path ks2 i j p hp_path hp_vertices_ks2
 
 -- normally an infimum is not guaranteed to be attained, but in this case

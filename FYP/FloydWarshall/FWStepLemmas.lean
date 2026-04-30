@@ -17,11 +17,8 @@ lemma fwStep_lower_bound_with_k (G : Graph n) (ks : List (Fin n)) (k i j : Fin n
     have h_total : distUpToList G ks i k + distUpToList G ks k j ≤ pathWeight G p := by
       exact fwStep_split_cost_le ks k i j p p1 p2
         hp_split hp_path hp_verts
-    have h_right :
-      distUpToList G ks i k + distUpToList G ks k j
-        ≤ distUpToList G (k :: ks) i j := by
-      simpa [hp_weight] using h_total
-    exact inf_le_of_right_le h_right
+    simp only [hp_weight] at h_total
+    exact inf_le_of_right_le h_total
 
 lemma fwStep_lower_bound_without_k (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) (p : Path n)
   (hp_path : isPathFromTo G p i j) (hp_verts : ∀ v ∈ p, v ∈ k :: ks)
@@ -37,31 +34,28 @@ lemma fwStep_lower_bound_without_k (G : Graph n) (ks : List (Fin n)) (k i j : Fi
         exact h hv
       simp [hv_ne_k] at hmem
       simp [hmem]
-    have hA : distUpToList G ks i j ≤ pathWeight G p :=
+    have distList_le_path : distUpToList G ks i j ≤ pathWeight G p :=
       distUpToList_le_of_path ks i j p hp_path hp_verts_ks
-    have h1 := (min_le_left (distUpToList G ks i j)
-      (distUpToList G ks i k + distUpToList G ks k j)).trans hA
-    rw [hp_weight] at h1
-    exact h1
+    simp [<- hp_weight, distList_le_path]
 
 -- any path from i to j that can use k is less than
 -- or equal to the path that goes via k
 lemma fwStep_upper_bound_via_k (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j := by
   apply csInf_le
-  · refine ⟨0, ?_⟩
+  · refine ⟨ 0, ?_ ⟩
     intro w hw
     exact zero_le _
   · rcases exists_path_weight_eq_distUpToList G ks i k with
-      ⟨p1, hp1_path, hp1_verts, hp1_w⟩
+      ⟨ p1, hp1_path, hp1_verts, hp1_w ⟩
     rcases exists_path_weight_eq_distUpToList G ks k j with
-      ⟨p2, hp2_path, hp2_verts, hp2_w⟩
+      ⟨ p2, hp2_path, hp2_verts, hp2_w ⟩
     let p := p1 ++ p2.tail
-    rcases hp1_path with ⟨hvalid1, hstart1, hend1⟩
-    rcases hp2_path with ⟨hvalid2, hstart2, hend2⟩
+    rcases hp1_path with ⟨ hvalid1, hstart1, hend1 ⟩
+    rcases hp2_path with ⟨ hvalid2, hstart2, hend2 ⟩
     have h_link : pathEnd p1 = pathStart p2 := by
       simp [hend1, hstart2]
-    refine ⟨p, ?_, ?_, ?_⟩
+    refine ⟨ p, ?_, ?_, ?_ ⟩
     · exact isPathFromTo_appendTail G i j p1 p2 hvalid1 hstart1 hvalid2 hend2 h_link
     · intro v hv
       unfold p at hv
