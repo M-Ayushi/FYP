@@ -1,15 +1,9 @@
-<!-- # FYP
+# Formal Verification of Shortest Path Algorithms in Lean
 
-## GitHub configuration
+This repository contains my final year project formalising parts of shortest-path theory in Lean 4, specifically the Floyd-Warshall algorithm.
 
-To set up your new GitHub repository, follow these steps:
+## Project Overview
 
-* Under your repository name, click **Settings**.
-* In the **Actions** section of the sidebar, click "General".
-* Check the box **Allow GitHub Actions to create and approve pull requests**.
-* Click the **Pages** section of the settings sidebar.
-* In the **Source** dropdown menu, select "GitHub Actions".
+The project defines finite weighted graphs, paths, path weights, and proves correctness properties for a formal model of Floyd-Warshall.
 
-After following the steps above, you can remove this section from the README file. -->
-
-Formal Verification of Shortest Path Algorithms in Lean
+The main result is a correctness theorem showing that the Floyd-Warshall recurrence computed shortest path distances over a resticted set of intermediate vertices.
