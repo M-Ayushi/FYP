@@ -6,13 +6,19 @@ This repository contains my final year project formalising parts of shortest-pat
 
 The project defines finite weighted graphs, paths, path weights, and proves correctness properties for a formal model of Floyd-Warshall.
 
-The main result is a correctness theorem showing that the Floyd-Warshall recurrence computed shortest path distances over a resticted set of intermediate vertices:
+The main result is a correctness theorem showing that the Floyd-Warshall recurrence computes shortest path distances over a restricted set of intermediate vertices:
 
 distUpToList G (k :: ks) i j = 
     min (distUpToList G ks i j)
         (distUpToList G ks i k + distUpToList G ks k j)
 
 ## Building the project:
+Clone the repository:
+```bash
+git clone https://github.com/M-Ayushi/FYP.git
+cd FYP
+```
+
 Build using Lake:
 ```bash
 lake build
