@@ -23,8 +23,7 @@ lemma fwStep_invariant (ks : List (Fin n)) (k i j : Fin n) :
     · -- distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j
       exact fwStep_upper_bound_via_k G ks k i j
 
-lemma fw_invariant :
-  ∀ (l : List (Fin n)) (i j : Fin n),
+lemma fw_invariant : ∀ (l : List (Fin n)) (i j : Fin n),
     (l.foldl fwStep (initDist G)) i j = distUpToList G l i j := by
   intro l
   induction l using List.reverseRecOn with

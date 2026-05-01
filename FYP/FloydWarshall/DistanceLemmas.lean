@@ -114,25 +114,25 @@ lemma distUpToList_le_of_path (ks : List (Fin n)) (i j : Fin n)
 -- i.e. it can only decrease distances
 lemma distUpToList_mono (ks1 ks2 : List (Fin n)) (h : ∀ v, v ∈ ks1 → v ∈ ks2) :
     ∀ i j , distUpToList G ks2 i j ≤ distUpToList G ks1 i j := by
-  intro i j
-  apply le_sInf
-  intro w hw
-  rcases hw with ⟨ p, hp_path, hp_vertices, hp_weight ⟩
-  rw [<- hp_weight]
-  have hp_vertices_ks2 : ∀ v ∈ p, v ∈ ks2 ∨ v = i ∨ v = j := by
-    intro v hv
-    specialize hp_vertices v hv
-    cases hp_vertices with
-    | inl h_in_ks1 => exact Or.inl (h v h_in_ks1)
-    | inr h_eq => exact Or.inr h_eq
-  exact distUpToList_le_of_path ks2 i j p hp_path hp_vertices_ks2
+    intro i j
+    apply le_sInf
+    intro w hw
+    rcases hw with ⟨ p, hp_path, hp_vertices, hp_weight ⟩
+    rw [<- hp_weight]
+    have hp_vertices_ks2 : ∀ v ∈ p, v ∈ ks2 ∨ v = i ∨ v = j := by
+      intro v hv
+      specialize hp_vertices v hv
+      cases hp_vertices with
+      | inl h_in_ks1 => exact Or.inl (h v h_in_ks1)
+      | inr h_eq => exact Or.inr h_eq
+    exact distUpToList_le_of_path ks2 i j p hp_path hp_vertices_ks2
 
 -- normally an infimum is not guaranteed to be attained, but in this case
 -- we are restricted to only positive integer weights so the infimum is actually a minimum
 lemma exists_path_weight_eq_distUpToList (G : Graph n)
   (ks : List (Fin n)) (i j : Fin n) :
   ∃ p, isPathFromTo G p i j ∧ (∀ v ∈ p, v ∈ ks)
-      ∧ pathWeight G p = distUpToList G ks i j := by
+  ∧ pathWeight G p = distUpToList G ks i j := by
     unfold distUpToList
     sorry
 

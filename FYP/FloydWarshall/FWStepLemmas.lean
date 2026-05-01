@@ -42,11 +42,8 @@ lemma fwStep_lower_bound_without_k (G : Graph n) (ks : List (Fin n)) (k i j : Fi
 -- or equal to the path that goes via k
 lemma fwStep_upper_bound_via_k (G : Graph n) (ks : List (Fin n)) (k i j : Fin n) :
   distUpToList G (k :: ks) i j ≤ distUpToList G ks i k + distUpToList G ks k j := by
-  apply csInf_le
-  · refine ⟨ 0, ?_ ⟩
-    intro w hw
-    exact zero_le _
-  · rcases exists_path_weight_eq_distUpToList G ks i k with
+    apply sInf_le
+    rcases exists_path_weight_eq_distUpToList G ks i k with
       ⟨ p1, hp1_path, hp1_verts, hp1_w ⟩
     rcases exists_path_weight_eq_distUpToList G ks k j with
       ⟨ p2, hp2_path, hp2_verts, hp2_w ⟩
@@ -66,6 +63,5 @@ lemma fwStep_upper_bound_via_k (G : Graph n) (ks : List (Fin n)) (k i j : Fin n)
           have hv2' : v ∈ p2 := List.mem_of_mem_tail hv2
           simp [hp2_verts v hv2']
     · rw [<- hp1_w, <- hp2_w, pathWeight_append_tail p1 p2 hvalid1 h_link]
-
 
 end FYP
